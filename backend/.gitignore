@@ -1,0 +1,10 @@
+# Dependencies
+node_modules/
+
+# Environment Variables
+.env
+
+# AI Assistant & IDE Folders
+.agents/
+.claude/
+.windsurf/

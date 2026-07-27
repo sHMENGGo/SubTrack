@@ -1,0 +1,106 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output = "./generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            Int            @id @default(autoincrement())
+  username          String         @unique
+  password      String  
+  email         String         @unique
+  created_at    DateTime       @default(now())
+
+  subscriptions Subscription[]
+  categories    Category[]
+  budgets       Budget[]
+  notifications Notification[]
+}
+
+model Subscription {
+  id                String           @id @default(uuid())
+  user_id           Int
+  category_id       String?
+  name              String           
+  amount            Decimal          @db.Decimal(10, 2)
+  currency          String           @default("USD")
+  next_billing_date DateTime         @db.Date
+  is_active         Boolean          @default(true)
+  created_at        DateTime         @default(now())
+  updated_at        DateTime?        @updatedAt
+
+  history           PaymentHistory[]
+  notifications     Notification[]
+
+  user              User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  category          Category?        @relation(fields: [category_id], references: [id], onDelete: SetNull)
+}
+
+model Category {
+  id            String         @id @default(uuid())
+  user_id       Int            @unique
+  name          String         
+  color_hex     String?        
+  created_at    DateTime       @default(now())
+  updated_at    DateTime?       @updatedAt
+  
+  subscriptions Subscription[]
+  budgets       Budget[]
+
+  user          User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model PaymentHistory {
+  id              String       @id @default(uuid())
+  subscription_id String
+  amount          Decimal      @db.Decimal(10, 2)
+  currency        String       @default("USD")
+  billing_date    DateTime     @db.Date
+  created_at      DateTime     @default(now())
+
+  subscription    Subscription @relation(fields: [subscription_id], references: [id], onDelete: Cascade)
+}
+
+model Budget {
+  id          String    @id @default(uuid())
+  user_id     Int       
+  category_id String?   
+  amount      Decimal   @db.Decimal(10, 2)
+  month       Int       
+  year        Int
+  created_at  DateTime  @default(now())
+  updated_at  DateTime?  @updatedAt
+
+  user        User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  category    Category? @relation(fields: [category_id], references: [id], onDelete: SetNull)
+
+  @@unique([user_id, category_id, month, year])
+}
+
+model Notification {
+  id              String       @id @default(uuid())
+  user_id         Int
+  subscription_id String
+  type            AlertTrigger 
+  message         String       
+  is_read         Boolean      @default(false)
+  notify_at       DateTime     
+  created_at      DateTime     @default(now())
+
+  user            User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  subscription    Subscription @relation(fields: [subscription_id], references: [id], onDelete: Cascade)
+}
+
+enum AlertTrigger {
+  THREE_DAYS_BEFORE
+  ONE_DAY_BEFORE
+  DUE_TODAY
+}
