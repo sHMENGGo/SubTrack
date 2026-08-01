@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+:root {
+   --page-bg: #0D0D0D;
+   --surface-1: #1A1A19;
+   --surface-2: #2C2C2A;
+   --border: #9CA3AF33;
+   --text-primary: #FFFFFF;
+   --text-secondary: #C3C2B7;
+   --text-muted: #898781;
+   --fill-accent: #2A78D6;
+   --fill-warning: #FAB219;
+   --fill-danger: #D03B3B;
+}
+h1 {color: var(--text-primary);}
+h2 {color: var(--text-secondary);}
+
+* {
+   box-sizing: border-box;
+   font-family: 'Nunito variable', sans-serif;
+}
+

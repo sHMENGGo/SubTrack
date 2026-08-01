@@ -6,6 +6,7 @@
 generator client {
   provider = "prisma-client"
   output = "./generated"
+  moduleFormat = "cjs"
 }
 
 datasource db {
@@ -14,7 +15,7 @@ datasource db {
 
 model User {
   id            Int            @id @default(autoincrement())
-  username          String         @unique
+  name          String         @unique
   password      String  
   email         String         @unique
   created_at    DateTime       @default(now())
@@ -46,7 +47,7 @@ model Subscription {
 
 model Category {
   id            String         @id @default(uuid())
-  user_id       Int            @unique
+  user_id       Int            
   name          String         
   color_hex     String?        
   created_at    DateTime       @default(now())
@@ -74,6 +75,7 @@ model Budget {
   user_id     Int       
   category_id String?   
   amount      Decimal   @db.Decimal(10, 2)
+  currency    String       @default("USD") 
   month       Int       
   year        Int
   created_at  DateTime  @default(now())
@@ -82,7 +84,7 @@ model Budget {
   user        User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
   category    Category? @relation(fields: [category_id], references: [id], onDelete: SetNull)
 
-  @@unique([user_id, category_id, month, year])
+  @@unique([user_id, category_id, month, year, currency])
 }
 
 model Notification {
@@ -100,6 +102,7 @@ model Notification {
 }
 
 enum AlertTrigger {
+  ONE_WEEK_BEFORE
   THREE_DAYS_BEFORE
   ONE_DAY_BEFORE
   DUE_TODAY

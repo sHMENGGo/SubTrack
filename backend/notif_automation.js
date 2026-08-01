@@ -6,6 +6,43 @@ const prisma = new PrismaClient({ adapter })
 
 const cron = require('node-cron')
 
+
+// Function to check for subscriptions every day at 8 AM that are 1 week away from billing
+cron.schedule('0 8 * * *', async () => {
+   console.log("Running subscription check, 1 week due date...")
+   try {
+   // Calculate the date exactly 3 days from right now
+   const target_date = new Date()
+   target_date.setDate(target_date.getDate() + 7)
+   console.log("Target date for 7 days due date:", target_date)
+   const year = target_date.getFullYear()
+   const month = String(target_date.getMonth() + 1).padStart(2, '0') // Months are zero-indexed
+   const day = String(target_date.getDate()).padStart(2, '0')
+   const date_string = `${year}-${month}-${day}T00:00:00.000Z`
+   // Find all active subscriptions billing on that exact day
+   const upcoming_subscriptions_1week = await prisma.subscription.findMany({
+      where: {
+         is_active: true,
+         next_billing_date: {equals: date_string}
+      }
+   })
+   // Generate a Notification record for each one found
+   for (const sub of upcoming_subscriptions_1week) {
+      await prisma.notification.create({
+         data: {
+            user_id: sub.user_id,
+            subscription_id: sub.id,
+            type: 'ONE_WEEK_BEFORE',
+            message: `${sub.name} will charge ${sub.currency} ${sub.amount} in 1 week.`,
+            notify_at: new Date(),
+            is_read: false
+         }
+      })
+   }
+   console.log(`Generated ${upcoming_subscriptions_3days.length} notifications for 1 week due date.`)
+   } catch (error) {console.error("Error generating notifications 1 week before:", error)}
+})
+
 // Function to check for subscriptions every day at 8 AM that are 3 days away from billing
 cron.schedule('0 8 * * *', async () => {
    console.log("Running subscription check, 3 days due date...")
@@ -39,7 +76,7 @@ cron.schedule('0 8 * * *', async () => {
       })
    }
    console.log(`Generated ${upcoming_subscriptions_3days.length} notifications for 3 days due date.`)
-   } catch (error) {console.error("Error generating notifications:", error)}
+   } catch (error) {console.error("Error generating notifications 3 days before:", error)}
 })
 
 // Function to check for subscriptions every day at 8 AM that are 1 day away from billing
@@ -74,7 +111,7 @@ cron.schedule('0 8 * * *', async () => {
       })
    }
    console.log(`Generated ${upcoming_subscriptions_1day.length} notifications for 1 day due date.`)
-   } catch (error) {console.error("Error generating notifications:", error)}
+   } catch (error) {console.error("Error generating notifications 1 day before:", error)}
 })
 
 // Function to check for subscriptions every day at 8 AM that are due today
@@ -109,5 +146,6 @@ cron.schedule('0 8 * * *', async () => {
       })
    }
    console.log(`Generated ${due_subscriptions.length} notifications for due today.`)
-   } catch (error) {console.error("Error generating notifications:", error)}
+   } catch (error) {console.error("Error generating notifications due today:", error)}
 })
+
