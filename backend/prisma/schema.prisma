@@ -14,7 +14,7 @@ datasource db {
 }
 
 model User {
-  id            Int            @id @default(autoincrement())
+  id            String         @id @default(uuid())
   name          String         @unique
   password      String  
   email         String         @unique
@@ -28,8 +28,8 @@ model User {
 
 model Subscription {
   id                String           @id @default(uuid())
-  user_id           Int
-  category_id       String?
+  user_id           String
+  category_id       Int?
   name              String           
   amount            Decimal          @db.Decimal(10, 2)
   currency          String           @default("USD")
@@ -46,8 +46,8 @@ model Subscription {
 }
 
 model Category {
-  id            String         @id @default(uuid())
-  user_id       Int            
+  id            Int         @id @default(autoincrement())
+  user_id       String            
   name          String         
   color_hex     String?        
   created_at    DateTime       @default(now())
@@ -72,8 +72,8 @@ model PaymentHistory {
 
 model Budget {
   id          String    @id @default(uuid())
-  user_id     Int       
-  category_id String?   
+  user_id     String       
+  category_id Int?   
   amount      Decimal   @db.Decimal(10, 2)
   currency    String       @default("USD") 
   month       Int       
@@ -89,7 +89,7 @@ model Budget {
 
 model Notification {
   id              String       @id @default(uuid())
-  user_id         Int
+  user_id         String
   subscription_id String
   type            AlertTrigger 
   message         String       

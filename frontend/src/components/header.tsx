@@ -1,7 +1,7 @@
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faRightFromBracket } from "@fortawesome/free-solid-svg-icons"
-import { useNavigate } from "react-router"
+import { replace, useNavigate } from "react-router"
 import { custom_fetch } from "../services/api"
 import { useState } from "react"
 import toast from "react-hot-toast"
@@ -31,10 +31,11 @@ export default function Header() {
       <main className="bg-(--surface-2) px-8 py-2 rounded-lg w-full flex justify-between" >
          <p className="font-semibold text-2xl text-(--text-primary)" >SubTrack</p>
          <section className="gap-5 text-lg font-semibold flex items-center" >
-            <button className="text-(--text-primary)" >Subscription</button>
-            <button className="text-(--text-primary)" >Category</button>
-            <button className="text-(--text-primary)" >Budget</button>
-            <button className="text-(--text-primary)" >History</button>
+            <button onClick={()=> navigate('/dashboard', {replace: true})}  className="text-(--text-primary) hover:text-(--text-secondary) transition-colors duration-200" >Dashboard</button>
+            <button onClick={()=> navigate('/subscription', {replace: true})}  className="text-(--text-primary) hover:text-(--text-secondary) transition-colors duration-200" >Subscription</button>
+            <button onClick={()=> navigate('/category', {replace: true})}  className="text-(--text-primary) hover:text-(--text-secondary) transition-colors duration-200" >Category</button>
+            <button onClick={()=> navigate('/budget', {replace: true})}  className="text-(--text-primary) hover:text-(--text-secondary) transition-colors duration-200" >Budget</button>
+            <button onClick={()=> navigate('/history', {replace: true})}  className="text-(--text-primary) hover:text-(--text-secondary) transition-colors duration-200" >History</button>
             <FontAwesomeIcon icon={faRightFromBracket} onClick={()=> set_show_logout(true)}  className="text-(--text-primary) text-2xl cursor-pointer" />
          </section>
 

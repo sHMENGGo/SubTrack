@@ -62,7 +62,6 @@ export default function Dashboard() {
       }; get_renewals()
    }, [])
 
-
    // Get spent by category
    const [toggle, set_toggle] = useState('PHP')
    const [category_spent, set_category_spent] = useState<any[]>([])
@@ -90,22 +89,12 @@ export default function Dashboard() {
    }, [])
 
    // Get budget left this month
-   const [php_budget_month, set_php_budget_month] = useState(0)
-   const [usd_budget_month, set_usd_budget_month] = useState(0)
-   const [php_spent, set_php_spent] = useState(0)
-   const [usd_spent, set_usd_spent] = useState(0)
-   const [php_budget_left, set_php_budget_left] = useState(0)
-   const [usd_budget_left, set_usd_budget_left] = useState(0)
+   const [budget, set_budget] = useState<any>([])
    useEffect(()=> {
       const get_budget_left = async ()=> {
          try {
             const data = await custom_fetch('total/budget_left')
-            set_php_budget_month(data.php_budget)
-            set_usd_budget_month(data.usd_budget)
-            set_php_spent(data.php_spent)
-            set_usd_spent(data.usd_spent)
-            set_usd_budget_left(data.usd_left)
-            set_php_budget_left(data.php_left)
+            set_budget(data.budget)
          } catch (error) {console.log('Error getting budget left this month: ', error)}
       }; get_budget_left()
    }, [])
@@ -161,7 +150,7 @@ export default function Dashboard() {
                      </div>
                   </div>
                   {category_spent?.map(c => (
-                     <Progress key={c.category_id} id={c.category_id} color={c.category_hex} name={c.category_name} spent={c.total_amount} total={c.category_budget} symbol={toggle === 'PHP' ? '₱' : '$'} />
+                     <Progress page="dashboard_category" key={c.category_id} id={c.category_id} color={c.category_hex} name={c.category_name} current={c.total_amount} max={c.category_budget} symbol={toggle === 'PHP' ? '₱' : '$'} />
                   ))}
                </div>
             </div>
@@ -180,8 +169,8 @@ export default function Dashboard() {
                <div className="bg-(--surface-2) rounded-lg p-4 border border-(--border) flex flex-col gap-3 ">
                   <h1 className="text-xl" >Budget this month</h1>
                   <div className="flex flex-col gap-2" >
-                     <Progress name={'PHP'} left={php_budget_left}  spent={php_spent} total={php_budget_month} symbol={'₱'} />
-                     <Progress name={'USD'} left={usd_budget_left} spent={usd_spent} total={usd_budget_month} symbol={'$'} />
+                     <Progress page="dashboard_budget"  name={'PHP'} left={budget.php_left}  current={budget.php_spent} max={budget.php_budget} symbol={'₱'} />
+                     <Progress page="dashboard_budget" name={'USD'} left={budget.usd_left} current={budget.usd_spent} max={budget.usd_budget} symbol={'$'} />
                   </div>
                </div>
             </div>

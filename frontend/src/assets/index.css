@@ -8,9 +8,9 @@
    --text-primary: #FFFFFF;
    --text-secondary: #C3C2B7;
    --text-muted: #898781;
-   --fill-accent: #2A78D6;
-   --fill-warning: #FAB219;
-   --fill-danger: #D03B3B;
+   --fill-accent: #0d6efd;
+   --fill-warning: #ffc107;
+   --fill-danger: #b91c1c;
 }
 h1 {color: var(--text-primary);}
 h2 {color: var(--text-secondary);}
@@ -18,5 +18,28 @@ h2 {color: var(--text-secondary);}
 * {
    box-sizing: border-box;
    font-family: 'Nunito variable', sans-serif;
+}
+
+button {
+   cursor: pointer;
+}
+
+input, select {
+   background: var(--surface-2);
+   border: 1px solid var(--border);
+   color: var(--text-primary);
+   transition: all 0.2s ease-in-out;
+   
+}
+input:focus, select:focus {
+   outline: none;
+   box-shadow: 0 0 0 2px #172554;
+}
+select option {
+   background: var(--surface-2);
+   color: var(--text-primary);
+   border: 1px solid var(--border);
+   border-radius: 0.5rem;
+   cursor: pointer;
 }
 

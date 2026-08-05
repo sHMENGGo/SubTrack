@@ -1,16 +1,19 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { custom_fetch } from '../services/api';
-import Toaster from '../components/toaster';
 import toast from 'react-hot-toast';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
 
 export default function Login() {
+   const navigate = useNavigate()
+   const [show_password, set_show_password] = useState(false)
+
+   // Login
    const [email, set_email] = useState('');
    const [password, set_password] = useState('');
    const [remember_me, set_remember_me] = useState(false);
-   const navigate = useNavigate()
    const [loading, set_loading] = useState(false)
-
    const login = async (e: React.FormEvent)=> {
       e.preventDefault()
       set_loading(true)
@@ -19,7 +22,7 @@ export default function Login() {
             method: 'POST',
             body: JSON.stringify({ email, password, remember_me })
          })
-         navigate('/dashboard')
+         navigate('/dashboard', {replace: true})
          toast.success(data.message)
       } catch(err) {console.log('Error login: ', err)}
       finally {set_loading(false)}
@@ -38,12 +41,17 @@ export default function Login() {
                {/* Email Input */}
                <div>
                   <label htmlFor="email" className="block text-sm font-medium text-(--text-muted) mb-1.5">Email</label>
-                  <input type="email" id="email" value={email} onChange={(e) => set_email(e.target.value)} placeholder="name@example.com" required  className="w-full px-4 py-2.5 bg-(--surface-2) text-(--text-primary) border border-(--border) rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-950 transition-all duration-200" />
+                  <input type="email" id="email" value={email} onChange={(e) => set_email(e.target.value)} placeholder="name@example.com" required  className="w-full px-4 py-2.5 rounded-lg" />
                </div>
                {/* Password Input */}
-               <div>
+               <div className='relative' >
                   <label htmlFor="password" className="block text-sm font-medium text-(--text-muted) mb-1.5">Password</label>
-                  <input type="password" id="password" value={password} onChange={(e) => set_password(e.target.value)} placeholder="••••••••" required  className="w-full px-4 py-2.5 bg-(--surface-2) border border-(--border) rounded-lg text-(--text-primary) focus:outline-none focus:ring-2 focus:ring-blue-950  transition-all duration-200" />
+                  <input type={show_password ? 'text' : 'password'} id="password" value={password} onChange={(e) => set_password(e.target.value)} placeholder="••••••••" required  className="w-full px-4 py-2.5 rounded-lg" />
+                  {show_password ? (
+                     <FontAwesomeIcon icon={faEye} onClick={()=> set_show_password(false)}  className='text-(--text-muted) text-lg absolute right-2 top-[55%] cursor-pointer hover:text-(--text-secondary) ' />
+                  ) : (
+                     <FontAwesomeIcon icon={faEyeSlash} onClick={()=> set_show_password(true)}  className='text-(--text-muted) text-lg absolute right-2 top-[55%] cursor-pointer hover:text-(--text-secondary) ' />
+                  )}
                </div>
                <div className="flex items-center justify-between mt-1">
                   <label className="flex items-center gap-2 cursor-pointer group">
@@ -55,7 +63,6 @@ export default function Login() {
                <button type="submit"  className="w-full mt-2 bg-blue-700 text-(--text-primary) font-semibold py-2.5 rounded-lg hover:bg-blue-500 active:bg-slate-950 transition-all duration-200" >{loading ? 'Signing in...' : 'Sign in'}</button>
             </form>
             <p className="text-center text-sm text-(--text-muted) mt-8 flex justify-center flex-nowrap">Don't have an account?<span onClick={()=> navigate('/register')}  className="font-semibold text-blue-700 hover:text-blue-500 transition-colors ml-1 cursor-pointer" >Register here</span></p>
-            <Toaster/>
          </main>
       </div>
    );

@@ -27,19 +27,19 @@ export type AggregateSubscription = {
 }
 
 export type SubscriptionAvgAggregateOutputType = {
-  user_id: number | null
+  category_id: number | null
   amount: runtime.Decimal | null
 }
 
 export type SubscriptionSumAggregateOutputType = {
-  user_id: number | null
+  category_id: number | null
   amount: runtime.Decimal | null
 }
 
 export type SubscriptionMinAggregateOutputType = {
   id: string | null
-  user_id: number | null
-  category_id: string | null
+  user_id: string | null
+  category_id: number | null
   name: string | null
   amount: runtime.Decimal | null
   currency: string | null
@@ -51,8 +51,8 @@ export type SubscriptionMinAggregateOutputType = {
 
 export type SubscriptionMaxAggregateOutputType = {
   id: string | null
-  user_id: number | null
-  category_id: string | null
+  user_id: string | null
+  category_id: number | null
   name: string | null
   amount: runtime.Decimal | null
   currency: string | null
@@ -78,12 +78,12 @@ export type SubscriptionCountAggregateOutputType = {
 
 
 export type SubscriptionAvgAggregateInputType = {
-  user_id?: true
+  category_id?: true
   amount?: true
 }
 
 export type SubscriptionSumAggregateInputType = {
-  user_id?: true
+  category_id?: true
   amount?: true
 }
 
@@ -215,8 +215,8 @@ export type SubscriptionGroupByArgs<ExtArgs extends runtime.Types.Extensions.Int
 
 export type SubscriptionGroupByOutputType = {
   id: string
-  user_id: number
-  category_id: string | null
+  user_id: string
+  category_id: number | null
   name: string
   amount: runtime.Decimal
   currency: string
@@ -251,8 +251,8 @@ export type SubscriptionWhereInput = {
   OR?: Prisma.SubscriptionWhereInput[]
   NOT?: Prisma.SubscriptionWhereInput | Prisma.SubscriptionWhereInput[]
   id?: Prisma.StringFilter<"Subscription"> | string
-  user_id?: Prisma.IntFilter<"Subscription"> | number
-  category_id?: Prisma.StringNullableFilter<"Subscription"> | string | null
+  user_id?: Prisma.StringFilter<"Subscription"> | string
+  category_id?: Prisma.IntNullableFilter<"Subscription"> | number | null
   name?: Prisma.StringFilter<"Subscription"> | string
   amount?: Prisma.DecimalFilter<"Subscription"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringFilter<"Subscription"> | string
@@ -288,8 +288,8 @@ export type SubscriptionWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.SubscriptionWhereInput | Prisma.SubscriptionWhereInput[]
   OR?: Prisma.SubscriptionWhereInput[]
   NOT?: Prisma.SubscriptionWhereInput | Prisma.SubscriptionWhereInput[]
-  user_id?: Prisma.IntFilter<"Subscription"> | number
-  category_id?: Prisma.StringNullableFilter<"Subscription"> | string | null
+  user_id?: Prisma.StringFilter<"Subscription"> | string
+  category_id?: Prisma.IntNullableFilter<"Subscription"> | number | null
   name?: Prisma.StringFilter<"Subscription"> | string
   amount?: Prisma.DecimalFilter<"Subscription"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringFilter<"Subscription"> | string
@@ -326,8 +326,8 @@ export type SubscriptionScalarWhereWithAggregatesInput = {
   OR?: Prisma.SubscriptionScalarWhereWithAggregatesInput[]
   NOT?: Prisma.SubscriptionScalarWhereWithAggregatesInput | Prisma.SubscriptionScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"Subscription"> | string
-  user_id?: Prisma.IntWithAggregatesFilter<"Subscription"> | number
-  category_id?: Prisma.StringNullableWithAggregatesFilter<"Subscription"> | string | null
+  user_id?: Prisma.StringWithAggregatesFilter<"Subscription"> | string
+  category_id?: Prisma.IntNullableWithAggregatesFilter<"Subscription"> | number | null
   name?: Prisma.StringWithAggregatesFilter<"Subscription"> | string
   amount?: Prisma.DecimalWithAggregatesFilter<"Subscription"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringWithAggregatesFilter<"Subscription"> | string
@@ -354,8 +354,8 @@ export type SubscriptionCreateInput = {
 
 export type SubscriptionUncheckedCreateInput = {
   id?: string
-  user_id: number
-  category_id?: string | null
+  user_id: string
+  category_id?: number | null
   name: string
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: string
@@ -384,8 +384,8 @@ export type SubscriptionUpdateInput = {
 
 export type SubscriptionUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  user_id?: Prisma.IntFieldUpdateOperationsInput | number
-  category_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  user_id?: Prisma.StringFieldUpdateOperationsInput | string
+  category_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
@@ -399,8 +399,8 @@ export type SubscriptionUncheckedUpdateInput = {
 
 export type SubscriptionCreateManyInput = {
   id?: string
-  user_id: number
-  category_id?: string | null
+  user_id: string
+  category_id?: number | null
   name: string
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: string
@@ -423,8 +423,8 @@ export type SubscriptionUpdateManyMutationInput = {
 
 export type SubscriptionUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  user_id?: Prisma.IntFieldUpdateOperationsInput | number
-  category_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  user_id?: Prisma.StringFieldUpdateOperationsInput | string
+  category_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
@@ -458,7 +458,7 @@ export type SubscriptionCountOrderByAggregateInput = {
 }
 
 export type SubscriptionAvgOrderByAggregateInput = {
-  user_id?: Prisma.SortOrder
+  category_id?: Prisma.SortOrder
   amount?: Prisma.SortOrder
 }
 
@@ -489,7 +489,7 @@ export type SubscriptionMinOrderByAggregateInput = {
 }
 
 export type SubscriptionSumOrderByAggregateInput = {
-  user_id?: Prisma.SortOrder
+  category_id?: Prisma.SortOrder
   amount?: Prisma.SortOrder
 }
 
@@ -556,8 +556,12 @@ export type NullableDateTimeFieldUpdateOperationsInput = {
   set?: Date | string | null
 }
 
-export type NullableStringFieldUpdateOperationsInput = {
-  set?: string | null
+export type NullableIntFieldUpdateOperationsInput = {
+  set?: number | null
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
 }
 
 export type SubscriptionCreateNestedManyWithoutCategoryInput = {
@@ -646,7 +650,7 @@ export type SubscriptionCreateWithoutUserInput = {
 
 export type SubscriptionUncheckedCreateWithoutUserInput = {
   id?: string
-  category_id?: string | null
+  category_id?: number | null
   name: string
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: string
@@ -689,8 +693,8 @@ export type SubscriptionScalarWhereInput = {
   OR?: Prisma.SubscriptionScalarWhereInput[]
   NOT?: Prisma.SubscriptionScalarWhereInput | Prisma.SubscriptionScalarWhereInput[]
   id?: Prisma.StringFilter<"Subscription"> | string
-  user_id?: Prisma.IntFilter<"Subscription"> | number
-  category_id?: Prisma.StringNullableFilter<"Subscription"> | string | null
+  user_id?: Prisma.StringFilter<"Subscription"> | string
+  category_id?: Prisma.IntNullableFilter<"Subscription"> | number | null
   name?: Prisma.StringFilter<"Subscription"> | string
   amount?: Prisma.DecimalFilter<"Subscription"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringFilter<"Subscription"> | string
@@ -716,7 +720,7 @@ export type SubscriptionCreateWithoutCategoryInput = {
 
 export type SubscriptionUncheckedCreateWithoutCategoryInput = {
   id?: string
-  user_id: number
+  user_id: string
   name: string
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: string
@@ -770,8 +774,8 @@ export type SubscriptionCreateWithoutHistoryInput = {
 
 export type SubscriptionUncheckedCreateWithoutHistoryInput = {
   id?: string
-  user_id: number
-  category_id?: string | null
+  user_id: string
+  category_id?: number | null
   name: string
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: string
@@ -814,8 +818,8 @@ export type SubscriptionUpdateWithoutHistoryInput = {
 
 export type SubscriptionUncheckedUpdateWithoutHistoryInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  user_id?: Prisma.IntFieldUpdateOperationsInput | number
-  category_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  user_id?: Prisma.StringFieldUpdateOperationsInput | string
+  category_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
@@ -842,8 +846,8 @@ export type SubscriptionCreateWithoutNotificationsInput = {
 
 export type SubscriptionUncheckedCreateWithoutNotificationsInput = {
   id?: string
-  user_id: number
-  category_id?: string | null
+  user_id: string
+  category_id?: number | null
   name: string
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: string
@@ -886,8 +890,8 @@ export type SubscriptionUpdateWithoutNotificationsInput = {
 
 export type SubscriptionUncheckedUpdateWithoutNotificationsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  user_id?: Prisma.IntFieldUpdateOperationsInput | number
-  category_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  user_id?: Prisma.StringFieldUpdateOperationsInput | string
+  category_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
@@ -900,7 +904,7 @@ export type SubscriptionUncheckedUpdateWithoutNotificationsInput = {
 
 export type SubscriptionCreateManyUserInput = {
   id?: string
-  category_id?: string | null
+  category_id?: number | null
   name: string
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: string
@@ -926,7 +930,7 @@ export type SubscriptionUpdateWithoutUserInput = {
 
 export type SubscriptionUncheckedUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  category_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  category_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
@@ -940,7 +944,7 @@ export type SubscriptionUncheckedUpdateWithoutUserInput = {
 
 export type SubscriptionUncheckedUpdateManyWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  category_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  category_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
@@ -952,7 +956,7 @@ export type SubscriptionUncheckedUpdateManyWithoutUserInput = {
 
 export type SubscriptionCreateManyCategoryInput = {
   id?: string
-  user_id: number
+  user_id: string
   name: string
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: string
@@ -978,7 +982,7 @@ export type SubscriptionUpdateWithoutCategoryInput = {
 
 export type SubscriptionUncheckedUpdateWithoutCategoryInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  user_id?: Prisma.IntFieldUpdateOperationsInput | number
+  user_id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
@@ -992,7 +996,7 @@ export type SubscriptionUncheckedUpdateWithoutCategoryInput = {
 
 export type SubscriptionUncheckedUpdateManyWithoutCategoryInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  user_id?: Prisma.IntFieldUpdateOperationsInput | number
+  user_id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1130,8 +1134,8 @@ export type $SubscriptionPayload<ExtArgs extends runtime.Types.Extensions.Intern
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
-    user_id: number
-    category_id: string | null
+    user_id: string
+    category_id: number | null
     name: string
     amount: runtime.Decimal
     currency: string
@@ -1567,8 +1571,8 @@ export interface Prisma__SubscriptionClient<T, Null = never, ExtArgs extends run
  */
 export interface SubscriptionFieldRefs {
   readonly id: Prisma.FieldRef<"Subscription", 'String'>
-  readonly user_id: Prisma.FieldRef<"Subscription", 'Int'>
-  readonly category_id: Prisma.FieldRef<"Subscription", 'String'>
+  readonly user_id: Prisma.FieldRef<"Subscription", 'String'>
+  readonly category_id: Prisma.FieldRef<"Subscription", 'Int'>
   readonly name: Prisma.FieldRef<"Subscription", 'String'>
   readonly amount: Prisma.FieldRef<"Subscription", 'Decimal'>
   readonly currency: Prisma.FieldRef<"Subscription", 'String'>

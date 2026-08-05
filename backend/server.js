@@ -77,7 +77,7 @@ app.get('/logout', token_auth, (req, res) => {
 })
 
 // Register route
-app.get('/register', async (req, res) => {
+app.post('/register', async (req, res) => {
    const { reg_name, reg_password, reg_email } = req.body
    try {
       await prisma.user.create({data: {
@@ -89,19 +89,38 @@ app.get('/register', async (req, res) => {
 })
 
 // Get subscription of current user
-app.get('/subscription', token_auth, async (req, res) => {
+app.post('/subscription', token_auth, async (req, res) => {
+	const { filter_category, filter_status } = req.body
+	const month_name = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 	try {
-		const subscriptions = await prisma.subscription.findMany({ where: { user_id: req.user.id } })
-		res.status(200).json({ subscriptions })
-	} catch (error) {res.status(500).json({ message: 'Error retrieving subscriptions.' })}
+		const subscriptions = await prisma.subscription.findMany({ 
+			where: { 
+				user_id: req.user.id,
+				category_id: filter_category || undefined,
+				is_active: filter_status === 'all' ? undefined : filter_status === 'true' ? true : filter_status === 'false' ? false : undefined
+			},
+			include: { category: { select: { name: true, color_hex: true } } }
+		})
+		const formatted_subs = subscriptions.map(sub => ({
+			...sub,
+			amount: Number(sub.amount).toFixed(2),
+			month: month_name[sub.next_billing_date.getMonth()],
+			day: String(sub.next_billing_date.getDate()).padStart(2, '0')
+		}))
+		res.status(200).json({ subscriptions: formatted_subs, message: 'Subscriptions retrieved successfully.' })
+	} catch (error) {
+		console.log(error)
+		res.status(500).json({ message: 'Error retrieving subscriptions.' })}
 })
 
 // Add subscription for current user
 app.post('/add/subscription', token_auth, async (req, res) => {
-	const { sub_name, sub_amount, billing_date, sub_category_id, sub_duration } = req.body
-	const date = new Date(billing_date)
+	const { sub_name, sub_amount, sub_currency, sub_month, sub_day, sub_category_id, sub_duration } = req.body
+	const month_name = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+	const date = new Date()
+	date.setMonth(month_name.indexOf(sub_month) + 1)
+	date.setDate(sub_day)
 	switch (sub_duration) {
-		case 'daily': date.setDate(date.getDate() + 1); break
 		case 'weekly': date.setDate(date.getDate() + 7); break
 		case 'monthly': date.setMonth(date.getMonth() + 1);break
 		case 'yearly': date.setFullYear(date.getFullYear() + 1); break
@@ -117,37 +136,50 @@ app.post('/add/subscription', token_auth, async (req, res) => {
 			amount: sub_amount,
 			next_billing_date: date_string,
 			user_id: req.user.id,
-			category_id: sub_category_id
+			category_id: sub_category_id === 0 ? null : sub_category_id,
+			currency: sub_currency
 		} })
 		res.status(201).json({ message: 'Subscription added successfully.' })
-	} catch (error) {res.status(500).json({ message: 'Error adding subscription.' })}
+	} catch (error) {
+		console.error(error)
+		res.status(500).json({ message: 'Error adding subscription.' })}
 })
 
 // Edit subscription of current user
 app.put('/edit/subscription', token_auth, async (req, res) => {
-	const { sub_id, new_sub_name, new_sub_amount, new_billing_date, new_sub_category_id, new_sub_duration } = req.body 
-	const new_date = new Date(new_billing_date)
+	const { sub_id, new_sub_name, new_sub_amount, new_sub_currency, new_sub_is_active, new_sub_month, new_sub_day, new_sub_category_id, new_sub_duration } = req.body 
+	const month_name = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+	const new_date = new Date()
+	new_date.setMonth(month_name.indexOf(new_sub_month) + 1)
+	new_date.setDate(new_sub_day)
 	switch (new_sub_duration) {
 		case 'daily': new_date.setDate(new_date.getDate() + 1); break
 		case 'weekly': new_date.setDate(new_date.getDate() + 7); break
 		case 'monthly': new_date.setMonth(new_date.getMonth() + 1);break
 		case 'yearly': new_date.setFullYear(new_date.getFullYear() + 1); break
 	}
+	const year = new_date.getFullYear()
+	const month = String(new_date.getMonth() + 1).padStart(2, '0')
+	const day = String(new_date.getDate()).padStart(2, '0')
+	const new_date_string = `${year}-${month}-${day}T00:00:00.000Z` // This will set the time to midnight UTC to satisfy js and prisma
 	// Add UTC time to the date to satisfy js and prisma
-	const new_formatted_date = `${new_date}T00:00:00.000Z`
 	// Only accepts input that is not undefined or null
 	const update_data = {}
-	if(new_sub_name !== undefined && new_sub_name !== null) {update_data.name = new_sub_name}
-	if(new_sub_amount !== undefined && new_sub_amount !== null) {update_data.amount = new_sub_amount}
-	if(new_billing_date !== undefined && new_billing_date !== null) {update_data.next_billing_date = new_formatted_date}
-	if(new_sub_category_id !== undefined && new_sub_category_id !== null) {update_data.category_id = new_sub_category_id}
-
+	update_data.name = new_sub_name
+	update_data.amount = new_sub_amount
+	if(new_sub_category_id === 0) {update_data.category_id = null} else {update_data.category_id = new_sub_category_id}
+	update_data.next_billing_date = new_date_string
+	update_data.currency = new_sub_currency
+	update_data.is_active = new_sub_is_active
 	try {
 		await prisma.subscription.update({ 
 			where: { id: sub_id, user_id: req.user.id }, 
-			data: { update_data } })
+			data: { ...update_data } })
 		res.status(200).json({ message: 'Subscription updated successfully.' })
-	} catch (error) {res.status(500).json({ message: 'Error updating subscription.' })}
+	} catch (error) {
+		console.error(error)
+		res.status(500).json({ message: 'Error updating subscription.' })
+	}
 })
 
 // Delete subscription of current user
@@ -366,20 +398,17 @@ app.get('/total/budget_left', token_auth, async (req, res) => {
    // Start of month
    const today = new Date();
    const today_year = today.getFullYear();
-   const month_index = today.getMonth() + 1; // 1 to 12 (e.g., August = 8)
-   
+   const month_index = today.getMonth() + 1;
    // Create strings for the ISO date (e.g., "08")
    const current_month_str = String(month_index).padStart(2, '0');
    const start_of_month = `${today_year}-${current_month_str}-01T00:00:00.000Z`;
-   
    // Last of month: new Date(year, month, 0) gets the last day of the PREVIOUS month.
    // So passing today.getMonth() + 1 gets the last day of the CURRENT month.
    const last_day_date = new Date(today_year, today.getMonth() + 1, 0);
    const last_day = String(last_day_date.getDate()).padStart(2, '0');
    const end_of_month = `${today_year}-${current_month_str}-${last_day}T23:59:59.999Z`;
-
    try {
-      // 1. Get Subscriptions (Spent)
+      // Get total amount of subscriptions this month (Spent)
       const data = await prisma.subscription.groupBy({
          where: { 
             next_billing_date: { gte: start_of_month, lte: end_of_month }, 
@@ -388,22 +417,22 @@ app.get('/total/budget_left', token_auth, async (req, res) => {
          by: ['currency'],
          _sum: { amount: true }
       });
-      
+
       const php_sub = data.find(item => item.currency === 'PHP');
       const usd_sub = data.find(item => item.currency === 'USD');
-      
+
       const php_spent = Number((php_sub?._sum?.amount || 0).toFixed(2));
       const usd_spent = Number((usd_sub?._sum?.amount || 0).toFixed(2));
 
-      // 2. Get Budget
-      const budget = await prisma.budget.groupBy({
+      // Get total budget of this month
+      const budgets = await prisma.budget.groupBy({
          where: { month: month_index, year: today_year, user_id: req.user.id},
          by: ['currency'],
          _sum: { amount: true }
       });
       
-      const php_budget_obj = budget.find(item => item.currency === 'PHP');
-      const usd_budget_obj = budget.find(item => item.currency === 'USD');
+      const php_budget_obj = budgets.find(item => item.currency === 'PHP');
+      const usd_budget_obj = budgets.find(item => item.currency === 'USD');
 
       // Extract the actual amounts into numbers! (This fixes the React error)
       const php_budget = Number((php_budget_obj?._sum?.amount || 0).toFixed(2));
@@ -413,17 +442,15 @@ app.get('/total/budget_left', token_auth, async (req, res) => {
       const php_left = Number((php_budget - php_spent).toFixed(2));
       const usd_left = Number((usd_budget - usd_spent).toFixed(2));
 
-      // Send flat numbers back to the React frontend
-      res.status(200).json({
-         php_budget, // Now this is a number (e.g., 5000) instead of an object
-         usd_budget, 
-         php_spent,
-         usd_spent,
-         php_left,
-         usd_left,
-         message: 'Remaining monthly budget calculated successfully.'
-      });
-      
+		const budget = {}
+		budget.php_budget = php_budget
+		budget.php_spent = php_spent
+		budget.php_left = php_left
+		budget.usd_budget = usd_budget
+		budget.usd_spent = usd_spent
+		budget.usd_left = usd_left
+
+      res.status(200).json({ budget, message: 'Remaining monthly budget calculated successfully.' });
    } catch (error) {
       console.log('error: ', error);
       res.status(500).json({ message: 'Error calculating monthly budget.' });
@@ -468,7 +495,7 @@ app.get('/renewals', token_auth, async (req, res) => {
    }
 })
 
-// Get spent by category
+// Get active expenses by category
 app.post('/category_spent', token_auth, async (req, res) => {
    const { money } = req.body
    if (!money) return res.status(400).json({ message: 'Currency is required.' })
@@ -507,13 +534,12 @@ app.post('/category_spent', token_auth, async (req, res) => {
       const spent_category = grouped_spent.map(group => {
          const category_data = categories.find(c => c.id === group.category_id) || { name: 'Unknown', color_hex: '#ccc' }
          const budget_match = budgets.find(b => b.category_id === group.category_id)
-         const category_budget = budget_match ? Number(budget_match.amount || 0) : 0
          return {
             category_id: group.category_id,
             total_amount: Number(group._sum.amount || 0).toFixed(2),
             category_name: category_data.name,
             category_hex: category_data.color_hex,
-            category_budget: Number(category_budget).toFixed(2)
+            category_budget: Number(budget_match?.amount || 0).toFixed(2)
          }
       })
       res.status(200).json({ spent_category, message: 'Spent by category retrieved successfully.' })
@@ -522,3 +548,115 @@ app.post('/category_spent', token_auth, async (req, res) => {
       res.status(500).json({ message: 'Error fetching category spent.' })
    }
 })
+
+// Get categories with total count and amount of subs
+app.get('/category_summary', token_auth, async (req, res) => {
+	try {
+		const categories = await prisma.category.findMany({ 
+			where: { user_id: req.user.id },
+			include: { subscriptions: true }
+		})
+		const category_ids = categories.map(cat => cat.id)
+		const category_amount = await prisma.subscription.groupBy({
+			by: ['category_id', 'currency'],
+			where: { user_id: req.user.id, category_id: { in: category_ids } },
+			_sum: { amount: true }
+		})
+		const category_summary = categories.map(cat => {
+			const php_cat_amount = category_amount.find(cat_amount => cat_amount.category_id === cat.id && cat_amount.currency === 'PHP')
+			const usd_cat_amount = category_amount.find(cat_amount => cat_amount.category_id === cat.id && cat_amount.currency === 'USD')
+			return {
+				id: cat.id,
+				name: cat.name,
+				color_hex: cat.color_hex,
+				subs_count: cat.subscriptions.length,
+				php_sub_amount: Number(php_cat_amount?._sum?.amount || 0).toFixed(2),
+				usd_sub_amount: Number(usd_cat_amount?._sum?.amount || 0).toFixed(2)
+			}
+		})
+		res.status(200).json({ category_summary, message: 'Category summary retrieved successfully' })
+	} catch (error) {
+      console.log('error: ', error)
+      res.status(500).json({ message: 'Error fetching category summary.' })
+   }
+})
+
+// Get total budget with expenses
+app.post('/budget_summary', token_auth, async (req, res)=> {
+	const { toggle, input_month_index, input_year } = req.body
+
+	const date = new Date()
+	// Create strings for the ISO date (e.g., "08")
+   const current_month_str = String(input_month_index + 1).padStart(2, '0');
+   const start_of_month = `${input_year}-${current_month_str}-01T00:00:00.000Z`;
+   // Last of month: new Date(year, month, 0) gets the last day of the PREVIOUS month.
+   const last_day_date = new Date(input_year, input_month_index + 1, 0);
+   const last_day = String(last_day_date.getDate()).padStart(2, '0');
+   const end_of_month = `${input_year}-${current_month_str}-${last_day}T23:59:59.999Z`;
+
+	try {
+		const budget = await prisma.budget.aggregate({
+			where: { month: input_month_index + 1, year: input_year, currency: toggle, user_id: req.user.id },
+			_sum: { amount: true }
+		})
+		const subs_total = await prisma.subscription.aggregate({
+			where: { currency: toggle, user_id: req.user.id, next_billing_date: { gte: start_of_month, lte: end_of_month } },
+			_sum: { amount: true }
+		})
+		const budget_summary = {}
+		budget_summary.budget = Number(budget._sum.amount || 0).toFixed(2)
+		budget_summary.subs_total = Number(subs_total._sum.amount || 0).toFixed(2)
+		res.status(200).json({ budget_summary, message: 'Budget summary retrieved successfully'})
+	} catch (error) {
+      console.log('error: ', error)
+      res.status(500).json({ message: 'Error fetching budget summary.' })
+   }
+})
+
+// Get categories, budget, and subs amount based on month
+app.post('/category_budget', token_auth, async (req, res)=> {
+	const { toggle, input_month_index, input_year } = req.body
+	const date = new Date()
+	// Create strings for the ISO date (e.g., "08")
+   const current_month_str = String(input_month_index + 1).padStart(2, '0');
+   const start_of_month = `${input_year}-${current_month_str}-01T00:00:00.000Z`;
+   // Last of month: new Date(year, month, 0) gets the last day of the PREVIOUS month.
+   const last_day_date = new Date(input_year, input_month_index + 1, 0);
+   const last_day = String(last_day_date.getDate()).padStart(2, '0');
+   const end_of_month = `${input_year}-${current_month_str}-${last_day}T23:59:59.999Z`;
+
+	try {
+		const categories = await prisma.category.findMany({ where: { user_id: req.user.id } })
+		const budgets = await prisma.budget.groupBy({
+			by: ['category_id'],
+			where: { user_id: req.user.id, currency: toggle, month: input_month_index + 1, year: input_year },
+			_sum: { amount: true }
+		})
+		const subscriptions = await prisma.subscription.groupBy({
+			by: ['category_id'],
+			where: { currency: toggle, user_id: req.user.id, next_billing_date: { gte: start_of_month, lte: end_of_month } },
+			_sum: { amount: true }
+		})
+		// Combine
+		const categories_budgets = categories.map(cat => {
+			const subscription_match = subscriptions.find(sub => sub.category_id === cat.id)
+			const budget_match = budgets.find(bud => bud.category_id === cat.id)
+			const budget_amount = Number(budget_match?._sum?.amount || 0).toFixed(2)
+			const subscription_amount = Number(subscription_match?._sum?.amount || 0).toFixed(2)
+
+			return {
+				name: cat.name,
+				color_hex: cat.color_hex,
+				budget: Number(budget_match?._sum?.amount || 0).toFixed(2),
+				amount: Number(subscription_match?._sum?.amount || 0).toFixed(2),
+				left: Number(budget_amount - subscription_amount < 0 ? 0 : budget_amount - subscription_amount).toFixed(2)
+			}
+		})
+		console.log(categories_budgets)
+		res.status(200).json({ categories_budgets, message: 'Categories budgets retrieved successfully' })
+	} catch (error) {
+      console.log('error: ', error)
+      res.status(500).json({ message: 'Error fetching categories with budget.' })
+   }
+})
+

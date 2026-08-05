@@ -20,12 +20,11 @@ export default function Layout() {
       }; check_login()
    }, [])
 
-   if(checking) return (<p className="text-7xl font-bold" >Loading...</p>)
-
    return (
+      
       <main className="flex flex-col p-4 w-full h-full bg-(--page-bg) gap-4" >
          <Header/>
-         <section className="w-full h-full" ><Outlet/></section>
+         <section className="w-full" ><Outlet/></section>
       </main>
    )
 }
