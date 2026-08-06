@@ -96,7 +96,7 @@ app.post('/subscription', token_auth, async (req, res) => {
 		const subscriptions = await prisma.subscription.findMany({ 
 			where: { 
 				user_id: req.user.id,
-				category_id: filter_category || undefined,
+				category_id: filter_category === 0 ? null : (filter_category || undefined),
 				is_active: filter_status === 'all' ? undefined : filter_status === 'true' ? true : filter_status === 'false' ? false : undefined
 			},
 			include: { category: { select: { name: true, color_hex: true } } }
@@ -246,17 +246,15 @@ app.get('/budget', token_auth, async (req, res) => {
 
 // Add budget for current user
 app.post('/add/budget', token_auth, async (req, res) => {
-	const { budget_amount, budget_category_id, budget_month, budget_year } = req.body
-	// Check if category is not null
-	const have_budget_category_id = {}
-	if(budget_category_id !== undefined || budget_category_id !== null) have_budget_category_id = budget_category_id
+	const { budget_amount, category_id, input_month_index, input_year, toggle } = req.body
 	try {
 		await prisma.budget.create({ data: {
 			amount: budget_amount,
-			category_id: have_budget_category_id,
-			month: budget_month,
-			year: budget_year,
-			user_id: req.user.id
+			category_id: category_id,
+			month: input_month_index + 1,
+			year: input_year,
+			user_id: req.user.id,
+			currency: toggle
 		} })
 		res.status(201).json({ message: 'Budget added successfully.' })
 	} catch (error) {res.status(500).json({ message: 'Error adding budget.' })}
@@ -264,16 +262,11 @@ app.post('/add/budget', token_auth, async (req, res) => {
 
 // Edit budget of current user
 app.put('/edit/budget', token_auth, async (req, res) => {
-	const { budget_id, new_budget_amount, new_budget_category_id, new_budget_month, new_budget_year } = req.body
-	const update_data = {}
-	if(new_budget_amount !== undefined || new_budget_amount !== null) update_data.amount = new_budget_amount
-	if(new_budget_category_id !== undefined || new_budget_category_id !== null) update_data.category_id = new_budget_category_id
-	if(new_budget_month !== undefined || new_budget_month !== null) update_data.month = new_budget_month
-	if(new_budget_year !== undefined || new_budget_year !== null) update_data.year = new_budget_year
+	const { budget_id, new_budget_amount, input_month_index, input_year } = req.body
 	try {
 		await prisma.budget.update({ 
-			where: { id: budget_id, user_id: req.user.id },
-			data: { update_data } 
+			where: { id: budget_id, month: input_month_index + 1, year: input_year, user_id: req.user.id },
+			data: { amount: new_budget_amount } 
 		})
 		res.status(200).json({ message: 'Budget updated successfully.' })
 	} catch (error) {res.status(500).json({ message: 'Error updating budget.' })}
@@ -281,11 +274,22 @@ app.put('/edit/budget', token_auth, async (req, res) => {
 
 // Delete budget of current user
 app.delete('/delete/budget', token_auth, async (req, res) => {
-	const { budget_id } = req.body
+	const { budget_to_delete, toggle, input_month_index, input_year } = req.body
 	try {
-		await prisma.budget.delete({ where: { id: budget_id, user_id: req.user.id } })
+		await prisma.budget.delete({ 
+			where: { 
+				id: budget_to_delete, 
+				user_id: req.user.id,
+				month: input_month_index + 1,
+				currency: toggle,
+				year: input_year
+			}
+		})
 		res.status(200).json({ message: 'Budget deleted successfully.' })
-	} catch (error) {res.status(500).json({ message: 'Error deleting budget.' })}
+	} catch (error) {
+		console.error(error)
+		res.status(500).json({ message: 'Error deleting budget.' })
+	}
 })
 
 // Get subscription history of current user
@@ -571,7 +575,8 @@ app.get('/category_summary', token_auth, async (req, res) => {
 				color_hex: cat.color_hex,
 				subs_count: cat.subscriptions.length,
 				php_sub_amount: Number(php_cat_amount?._sum?.amount || 0).toFixed(2),
-				usd_sub_amount: Number(usd_cat_amount?._sum?.amount || 0).toFixed(2)
+				usd_sub_amount: Number(usd_cat_amount?._sum?.amount || 0).toFixed(2),
+
 			}
 		})
 		res.status(200).json({ category_summary, message: 'Category summary retrieved successfully' })
@@ -628,7 +633,7 @@ app.post('/category_budget', token_auth, async (req, res)=> {
 	try {
 		const categories = await prisma.category.findMany({ where: { user_id: req.user.id } })
 		const budgets = await prisma.budget.groupBy({
-			by: ['category_id'],
+			by: ['id','category_id'],
 			where: { user_id: req.user.id, currency: toggle, month: input_month_index + 1, year: input_year },
 			_sum: { amount: true }
 		})
@@ -643,16 +648,17 @@ app.post('/category_budget', token_auth, async (req, res)=> {
 			const budget_match = budgets.find(bud => bud.category_id === cat.id)
 			const budget_amount = Number(budget_match?._sum?.amount || 0).toFixed(2)
 			const subscription_amount = Number(subscription_match?._sum?.amount || 0).toFixed(2)
-
 			return {
+				id: cat.id,
+				budget_id: budget_match?.id || null,
 				name: cat.name,
 				color_hex: cat.color_hex,
 				budget: Number(budget_match?._sum?.amount || 0).toFixed(2),
 				amount: Number(subscription_match?._sum?.amount || 0).toFixed(2),
+				color_hex: cat.color_hex,
 				left: Number(budget_amount - subscription_amount < 0 ? 0 : budget_amount - subscription_amount).toFixed(2)
 			}
 		})
-		console.log(categories_budgets)
 		res.status(200).json({ categories_budgets, message: 'Categories budgets retrieved successfully' })
 	} catch (error) {
       console.log('error: ', error)

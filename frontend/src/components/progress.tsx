@@ -18,18 +18,18 @@ export default function Progress({
   current = 0, 
   max = 0, // Default to 100 to prevent division by zero (NaN)
   symbol = "", 
-  page = ""
+  page = "",
+  color = ""
 }: ProgressProps) {
    
    // If total is 0 (passed intentionally), fallback to 1 to avoid Infinity/NaN in CSS
    const safe_max = max > 0 ? max : 1; 
    const bar_width = (current / safe_max) * 100;
-
    return (
       <main key={id} className="w-full">
          <section className="flex justify-between items-center">
             <div className="flex justify-between w-1/2 items-center" >
-               <h1>{name}</h1>
+               <h1 style={{ color: page === 'budget' ? color : 'var(--text-primary)' }}  className={` ${page === 'budget' ? 'text-3xl' : ''}`} >{name}</h1>
                {page === 'budget' && <h2>{symbol} {current} of {symbol} {max}</h2>}
             </div>
             {page === 'dashboard_category' && <h2>{symbol} {current} of {symbol} {max}</h2>}

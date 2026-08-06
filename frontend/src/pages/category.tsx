@@ -28,7 +28,8 @@ export default function Category() {
    const [show_add_category, set_show_add_category] = useState(false)
    const [category_name, set_category_name] = useState("")
    const [category_color, set_category_color] = useState("")
-   const add_category = async ()=> {
+   const add_category = async (e: any)=> {
+      e.preventDefault()
       try {
          const data = await custom_fetch('add/category', {
             method: 'POST',
@@ -53,13 +54,15 @@ export default function Category() {
       set_new_category_color(cat.color_hex)
       set_show_edit_category(true)
    }
-   const edit_category = async ()=> {
+   const edit_category = async (e: any)=> {
+      e.preventDefault()
       try {
          const data = await custom_fetch('edit/category', {
             method: 'PUT',
             body: JSON.stringify({ category_id, new_category_name, new_category_color })
          })
          set_refresh(!refresh)
+         set_show_edit_category(false)
          toast.success(data.message)
       } catch (error) {
          toast.error('Editing category failed')
@@ -77,7 +80,8 @@ export default function Category() {
       set_show_delete_category(true)
       console.log(cat.id)
    }
-   const delete_category = async ()=> {
+   const delete_category = async (e: any)=> {
+      e.preventDefault()
       try {
          const data = await custom_fetch('delete/category', {
             method: 'DELETE',
@@ -107,7 +111,7 @@ export default function Category() {
                <div style={{ background: cat.color_hex }}  className="w-full h-6 rounded bg-blue-900" ></div>
                <h1 className="text-2xl" >{cat.name}</h1>
                <h2>{cat.subs_count} Subs</h2>
-               <h2>₱ {cat.php_sub_amount} | $ {cat.usd_sub_amount}</h2>
+               <h2>Total: ₱ {cat.php_sub_amount} | $ {cat.usd_sub_amount}</h2>
                <div className="flex justify-end text-2xl gap-4" >
                   <FontAwesomeIcon icon={faPenToSquare} onClick={()=> open_edit(cat)}  className="text-blue-800 hover:text-blue-700 cursor-pointer" />
                   <FontAwesomeIcon icon={faTrash} onClick={()=> open_delete(cat)}  className="cursor-pointer text-red-800 hover:text-red-700 " />
@@ -118,11 +122,11 @@ export default function Category() {
          {/* Add category form */}
          {show_add_category && (
             <section onClick={()=> set_show_add_category(false)}  className=" top-0 left-0 w-full h-full absolute bg-black/50 flex justify-center items-center" >
-               <form onClick={(e)=> e.stopPropagation()} className="w-full max-w-md bg-(--surface-1) rounded-xl p-8 gap-2 flex flex-col" >
+               <form onSubmit={(e)=> add_category(e)} onClick={(e)=> e.stopPropagation()} className="w-full max-w-md bg-(--surface-1) rounded-xl p-8 gap-2 flex flex-col" >
                   <input type="text" value={category_name} onChange={(e) => set_category_name(e.target.value)}  placeholder="Category Name" required  className="px-4 py-2.5 rounded-lg w-full" />
                   <label htmlFor="color" className="text-(--text-primary) mt-4 " >Choose color</label>
                   <input type="color" id="color" value={category_color} onChange={(e)=> set_category_color(e.target.value)} className="h-10 w-full cursor-pointer rounded-lg" />
-                  <button onClick={add_category}  className="px-4 py-2.5 outline-none active:bg-blue-700 mt-4 rounded-lg bg-blue-900 text-(--text-primary) hover:bg-blue-800 transition-colors" >Add Category</button>
+                  <button type="submit"  className="px-4 py-2.5 outline-none active:bg-blue-700 mt-4 rounded-lg bg-blue-900 text-(--text-primary) hover:bg-blue-800 transition-colors" >Add Category</button>
                </form>
             </section>
          )}
@@ -130,11 +134,11 @@ export default function Category() {
          {/* Edit category form */}
          {show_edit_category && (
             <section onClick={()=> set_show_edit_category(false)}  className=" top-0 left-0 w-full h-full absolute bg-black/50 flex justify-center items-center" >
-               <form onClick={(e)=> e.stopPropagation()} className="w-full max-w-md bg-(--surface-1) rounded-xl p-8 gap-2 flex flex-col" >
+               <form onSubmit={(e)=> edit_category(e)} onClick={(e)=> e.stopPropagation()} className="w-full max-w-md bg-(--surface-1) rounded-xl p-8 gap-2 flex flex-col" >
                   <input type="text" value={new_category_name} onChange={(e) => set_new_category_name(e.target.value)}  placeholder="Category Name" required  className="px-4 py-2.5 rounded-lg w-full" />
                   <label htmlFor="color" className="text-(--text-primary) mt-4 " >Choose color</label>
                   <input type="color" id="color" value={new_category_color} onChange={(e)=> set_new_category_color(e.target.value)} className="h-10 w-full cursor-pointer rounded-lg" />
-                  <button onClick={edit_category}  className="px-4 py-2.5 outline-none active:bg-blue-700 mt-4 rounded-lg bg-blue-900 text-(--text-primary) hover:bg-blue-800 transition-colors" >Save changes</button>
+                  <button type="submit"  className="px-4 py-2.5 outline-none active:bg-blue-700 mt-4 rounded-lg bg-blue-900 text-(--text-primary) hover:bg-blue-800 transition-colors" >Save changes</button>
                </form>
             </section>
          )}
@@ -145,7 +149,7 @@ export default function Category() {
                <div onClick={(e)=> {e.stopPropagation(); e.preventDefault()}}  className="w-full max-w-md bg-(--surface-1) rounded-xl p-8 gap-2 flex flex-col" >
                   <h1 className="text-xl font-bold text-center" >Are you sure you want to delete {cat_name_to_delete} category?</h1>
                   <div className="flex gap-4 mt-4 justify-center" >
-                     <button onClick={delete_category}  className="px-4 py-2.5 outline-none active:bg-red-700 rounded-lg bg-red-900 text-(--text-primary) hover:bg-red-800 transition-colors" >Delete</button>
+                     <button onClick={(e)=> delete_category(e)}  className="px-4 py-2.5 outline-none active:bg-red-700 rounded-lg bg-red-900 text-(--text-primary) hover:bg-red-800 transition-colors" >Delete</button>
                      <button onClick={()=> set_show_delete_category(false)}  className="px-4 py-2.5 outline-none active:bg-blue-700 rounded-lg bg-blue-900 text-(--text-primary) hover:bg-blue-800 transition-colors" >Cancel</button>
                   </div>
                </div>
