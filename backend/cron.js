@@ -14,7 +14,7 @@ cron.schedule('* 1 * * *', async () => {
       const subs = await prisma.subscription.findMany({ where: { next_billing_date: { lte: today }, is_active: true } })
       let sub_count = 0
       let sub_history = 0
-      for (sub of subs) {
+      for (let sub of subs) {
          const old_date = new Date(sub.next_billing_date)
          const next_date = new Date(old_date)
          while(next_date <= today) {
@@ -27,10 +27,11 @@ cron.schedule('* 1 * * *', async () => {
 
          await prisma.$transaction([
             prisma.paymentHistory.create({ data: {
-               subscription_id: sub.id,
+               subscription: { connect: { id: sub.id } },
                amount: sub.amount,
                currency: sub.currency,
-               billing_date: old_date
+               billing_date: old_date,
+               user: { connect: { id: sub.user_id } }
             }}),
             prisma.subscription.update({
                where: { id: sub.id },

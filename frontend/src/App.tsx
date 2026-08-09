@@ -12,7 +12,7 @@ import Toaster from "./components/toaster"
 
 function App() {
   	return (	
-		<main className="w-full h-screen bg-(--page-bg) flex justify-center items-center relative overflow-y-auto overflow-x-hidden">
+		<main className="w-full bg-(--page-bg) overflow-y-auto overflow-x-hidden">
 			<BrowserRouter>
 				<Routes>
 					<Route path="/" element={<Login />} />
