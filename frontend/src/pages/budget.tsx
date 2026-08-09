@@ -186,9 +186,9 @@ export default function Budget() {
          {/* Add budget */}
          {show_add_budget && (
             <section onClick={()=> set_show_add_budget(false)}  className=" top-0 left-0 w-full h-full absolute bg-black/50 flex justify-center items-center" >
-               <form onClick={(e)=> e.stopPropagation()} className="w-full max-w-md bg-(--surface-1) rounded-xl p-8 gap-2 flex flex-col" >
-                  <input type="number" autoFocus value={budget_amount} onChange={(e) => set_budget_amount(e.target.valueAsNumber)}  placeholder="Amount" required  className="px-4 py-2.5 rounded-lg w-full" />
-                  <button onClick={(e)=> add_budget(e)}  className="px-4 py-2.5 outline-none active:bg-blue-700 mt-4 rounded-lg bg-blue-900 text-(--text-primary) hover:bg-blue-800 transition-colors" >Add Budget</button>
+               <form onSubmit={(e)=> add_budget(e)} onClick={(e)=> e.stopPropagation()} className="w-full max-w-md bg-(--surface-1) rounded-xl p-8 gap-2 flex flex-col" >
+                  <input type="number" autoFocus value={budget_amount} onChange={(e) => {let val = Number(e.target.value); if(val > 99999999) val = 99999999; set_budget_amount(val)}}  placeholder="Amount" required  className="px-4 py-2.5 rounded-lg w-full" />
+                  <button type="submit"  className="px-4 py-2.5 outline-none active:bg-blue-700 mt-4 rounded-lg bg-blue-900 text-(--text-primary) hover:bg-blue-800 transition-colors" >Add Budget</button>
                </form>
             </section>
          )}
@@ -197,7 +197,7 @@ export default function Budget() {
          {show_edit_budget && (
             <section onClick={()=> set_show_edit_budget(false)}  className=" top-0 left-0 w-full h-full absolute bg-black/50 flex justify-center items-center" >
                <form onClick={(e)=> e.stopPropagation()} className="w-full max-w-md bg-(--surface-1) rounded-xl p-8 gap-2 flex flex-col" >
-                  <input type="number" autoFocus value={new_budget_amount} onChange={(e) => set_new_budget_amount(e.target.valueAsNumber)}  placeholder="Amount" required  className="px-4 py-2.5 rounded-lg w-full" />
+                  <input type="number" autoFocus value={new_budget_amount} onChange={(e) => {let val = Number(e.target.value); if(val > 99999999) val = 99999999 ;set_new_budget_amount(val)}}  placeholder="Amount" required  className="px-4 py-2.5 rounded-lg w-full" />
                   <button onClick={(e)=> edit_budget(e)}  className="px-4 py-2.5 outline-none active:bg-blue-700 mt-4 rounded-lg bg-blue-900 text-(--text-primary) hover:bg-blue-800 transition-colors" >Add Budget</button>
                </form>
             </section>

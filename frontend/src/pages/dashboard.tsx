@@ -127,7 +127,7 @@ export default function Dashboard() {
             <div className="flex flex-col col-span-3 gap-4">
                <div className="bg-(--surface-2) rounded-lg p-4 border border-(--border) gap-3 flex flex-col">
                   <h1 className="text-xl">Upcoming Renewals</h1>
-                  {renewals?.map(renewal => (
+                  {renewals.length !== 0 ? renewals.map(renewal => (
                      <div key={renewal.id} className="flex items-center border-b p-1 border-(--border) relative" >
                         <div className="w-2 h-2 aspect-square rounded-full mr-2" style={{background: renewal.category.color_hex}}></div>
                         <h1>{renewal.name}</h1>
@@ -136,7 +136,9 @@ export default function Dashboard() {
                            <h2>{renewal.currency === 'PHP' ? '₱' : '$'} {renewal.amount}</h2>
                         </div>
                      </div>
-                  ))}
+                  )) : (
+                     <h2 className="place-self-center text-2xl " >No upcoming renewals.</h2>
+                  )}
                </div>
                {/* Spend by category */}
                <div className="bg-(--surface-2) rounded-lg p-4 border border-(--border) flex flex-col gap-3">

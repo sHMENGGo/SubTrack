@@ -924,6 +924,7 @@ export const SubscriptionScalarFieldEnum = {
   amount: 'amount',
   currency: 'currency',
   next_billing_date: 'next_billing_date',
+  duration: 'duration',
   is_active: 'is_active',
   created_at: 'created_at',
   updated_at: 'updated_at'
@@ -946,6 +947,7 @@ export type CategoryScalarFieldEnum = (typeof CategoryScalarFieldEnum)[keyof typ
 
 export const PaymentHistoryScalarFieldEnum = {
   id: 'id',
+  user_id: 'user_id',
   subscription_id: 'subscription_id',
   amount: 'amount',
   currency: 'currency',

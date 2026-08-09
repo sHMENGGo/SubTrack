@@ -5,7 +5,7 @@ const cors = require('cors')
 const jwt = require('jsonwebtoken')
 const cookie_parser = require('cookie-parser')
 require('dotenv').config()
-require('./notif_automation') // Import the notification automation script
+require('./cron') // Import the notification automation script
 
 // Prisma 
 const adapter = new PrismaPg({connectionString: process.env.DATABASE_URL})
@@ -101,12 +101,30 @@ app.post('/subscription', token_auth, async (req, res) => {
 			},
 			include: { category: { select: { name: true, color_hex: true } } }
 		})
-		const formatted_subs = subscriptions.map(sub => ({
-			...sub,
-			amount: Number(sub.amount).toFixed(2),
-			month: month_name[sub.next_billing_date.getMonth()],
-			day: String(sub.next_billing_date.getDate()).padStart(2, '0')
-		}))
+		
+		const formatted_subs = subscriptions.map(sub => {
+			const bill_date = new Date(sub.next_billing_date)
+			switch(sub.duration){
+				case 'weekly': bill_date.setDate(bill_date.getDate() - 7); break
+				case 'monthly': bill_date.setMonth(bill_date.getMonth() - 1); break
+				case 'yearly': bill_date.setFullYear(bill_date.getFullYear() - 1); break
+			}
+
+			const prev_month = month_name[bill_date.getMonth()]
+			const prev_day = bill_date.getDate()
+			const prev_year = bill_date.getFullYear()
+			
+			return {
+				...sub,
+				amount: Number(sub.amount).toFixed(2),
+				prev_month,
+				prev_day,
+				prev_year,
+				month: month_name[sub.next_billing_date.getMonth()],
+				day: String(sub.next_billing_date.getDate()).padStart(2, '0'),
+				year: String(sub.next_billing_date.getFullYear())
+			}
+		})
 		res.status(200).json({ subscriptions: formatted_subs, message: 'Subscriptions retrieved successfully.' })
 	} catch (error) {
 		console.log(error)
@@ -116,9 +134,7 @@ app.post('/subscription', token_auth, async (req, res) => {
 // Add subscription for current user
 app.post('/add/subscription', token_auth, async (req, res) => {
 	const { sub_name, sub_amount, sub_currency, sub_month, sub_day, sub_category_id, sub_duration } = req.body
-	const month_name = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 	const date = new Date()
-	date.setMonth(month_name.indexOf(sub_month) + 1)
 	date.setDate(sub_day)
 	switch (sub_duration) {
 		case 'weekly': date.setDate(date.getDate() + 7); break
@@ -137,7 +153,8 @@ app.post('/add/subscription', token_auth, async (req, res) => {
 			next_billing_date: date_string,
 			user_id: req.user.id,
 			category_id: sub_category_id === 0 ? null : sub_category_id,
-			currency: sub_currency
+			currency: sub_currency,
+			duration: sub_duration
 		} })
 		res.status(201).json({ message: 'Subscription added successfully.' })
 	} catch (error) {
@@ -149,32 +166,35 @@ app.post('/add/subscription', token_auth, async (req, res) => {
 app.put('/edit/subscription', token_auth, async (req, res) => {
 	const { sub_id, new_sub_name, new_sub_amount, new_sub_currency, new_sub_is_active, new_sub_month, new_sub_day, new_sub_category_id, new_sub_duration } = req.body 
 	const month_name = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-	const new_date = new Date()
-	new_date.setMonth(month_name.indexOf(new_sub_month) + 1)
-	new_date.setDate(new_sub_day)
-	switch (new_sub_duration) {
-		case 'daily': new_date.setDate(new_date.getDate() + 1); break
-		case 'weekly': new_date.setDate(new_date.getDate() + 7); break
-		case 'monthly': new_date.setMonth(new_date.getMonth() + 1);break
-		case 'yearly': new_date.setFullYear(new_date.getFullYear() + 1); break
+	const today = new Date()
+	today.setHours(0, 0, 0, 0)
+	// Build the last due date from the actual input
+	const month_index = month_name.indexOf(new_sub_month) + 1
+	let base_date = new Date(today.getFullYear(), month_index, new_sub_day)
+	// If that lands in the future this year, it must have been last year instead
+	if (base_date > today) base_date.setFullYear(base_date.getFullYear() - 1)
+	// Advance one cycle at a time until we pass today
+	const next_date = new Date(base_date)
+	while (next_date <= today) {
+		switch (new_sub_duration) {
+			case 'weekly': next_date.setDate(next_date.getDate() + 7); break
+			case 'monthly': next_date.setMonth(next_date.getMonth() + 1); break
+			case 'yearly': next_date.setFullYear(next_date.getFullYear() + 1); break
+		}
 	}
-	const year = new_date.getFullYear()
-	const month = String(new_date.getMonth() + 1).padStart(2, '0')
-	const day = String(new_date.getDate()).padStart(2, '0')
-	const new_date_string = `${year}-${month}-${day}T00:00:00.000Z` // This will set the time to midnight UTC to satisfy js and prisma
-	// Add UTC time to the date to satisfy js and prisma
-	// Only accepts input that is not undefined or null
-	const update_data = {}
-	update_data.name = new_sub_name
-	update_data.amount = new_sub_amount
-	if(new_sub_category_id === 0) {update_data.category_id = null} else {update_data.category_id = new_sub_category_id}
-	update_data.next_billing_date = new_date_string
-	update_data.currency = new_sub_currency
-	update_data.is_active = new_sub_is_active
+	const new_date_string = `${next_date.getFullYear()}-${String(next_date.getMonth() + 1).padStart(2, '0')}-${String(next_date.getDate()).padStart(2, '0')}T00:00:00.000Z`
 	try {
 		await prisma.subscription.update({ 
 			where: { id: sub_id, user_id: req.user.id }, 
-			data: { ...update_data } })
+			data: {
+				name: new_sub_name,
+				amount: new_sub_amount,
+				category_id: new_sub_category_id === 0 ? null : new_sub_category_id,
+				next_billing_date: new_date_string,
+				currency: new_sub_currency,
+				is_active: new_sub_is_active,
+				duration: new_sub_duration
+			}})
 		res.status(200).json({ message: 'Subscription updated successfully.' })
 	} catch (error) {
 		console.error(error)
@@ -257,7 +277,10 @@ app.post('/add/budget', token_auth, async (req, res) => {
 			currency: toggle
 		} })
 		res.status(201).json({ message: 'Budget added successfully.' })
-	} catch (error) {res.status(500).json({ message: 'Error adding budget.' })}
+	} catch (error) {
+		console.error(error)
+		res.status(500).json({ message: 'Error adding budget.' })
+	}
 })
 
 // Edit budget of current user
@@ -269,7 +292,10 @@ app.put('/edit/budget', token_auth, async (req, res) => {
 			data: { amount: new_budget_amount } 
 		})
 		res.status(200).json({ message: 'Budget updated successfully.' })
-	} catch (error) {res.status(500).json({ message: 'Error updating budget.' })}
+	} catch (error) {
+		console.error(error)
+		res.status(500).json({ message: 'Error updating budget.' })
+	}
 })
 
 // Delete budget of current user
@@ -293,11 +319,79 @@ app.delete('/delete/budget', token_auth, async (req, res) => {
 })
 
 // Get subscription history of current user
-app.get('/history', token_auth, async (req, res) => {
-	try {
-		const histories = await prisma.subscriptionHistory.findMany({ where: { user_id: req.user.id } })
-		res.status(200).json({ histories })
-	} catch (error) {res.status(500).json({ message: 'Error retrieving subscription history.' })}
+app.post('/history', token_auth, async (req, res) => {
+	const { filter_category, filter_days } = req.body
+	const month_name = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+
+   const today = new Date();
+   const today_year = today.getFullYear();
+   const month = String(today.getMonth() + 1).padStart(2, '0');
+   const month_start = new Date(`${today_year}-${month}-01T00:00:00.000Z`);
+   const year_start = new Date(`${today_year}-01-01T00:00:00.000Z`);
+
+	// Declare the where clause before query
+	const where_query = { user_id: req.user.id }
+	if (filter_category === 0) where_query.subscription = { category: null }
+	if (filter_category !== "" && filter_category !== undefined) where_query.subscription = { category: { id: filter_category } }
+
+	if (filter_days === '30') {
+		const thirty_days_ago = new Date();
+		thirty_days_ago.setDate(thirty_days_ago.getDate() - 30);
+		
+		// Goes directly on where_query, doesn't touch subscription
+		where_query.billing_date = { gte: thirty_days_ago }; 
+	} else if (filter_days === '90') {
+		const ninety_days_ago = new Date();
+		ninety_days_ago.setDate(ninety_days_ago.getDate() - 90);
+		
+		where_query.billing_date = { gte: ninety_days_ago }; 
+	} else if (filter_days === 'year') {
+		// You already have year_start defined in your route!
+		where_query.billing_date = { gte: year_start }; 
+	}
+
+   try {
+      const histories = await prisma.paymentHistory.findMany({ 
+         where: where_query,
+         include: { subscription: {
+				include: { category: { select: { id: true, name: true, color_hex: true } } }
+			}},
+			orderBy: { billing_date: 'desc' }
+      })
+
+      const month_amount = { php: 0, usd: 0 };
+      const year_amount = { php: 0, usd: 0 };
+
+      // Process all histories in a single pass
+      histories?.forEach(history => {
+         const billing_date = new Date(history.billing_date);
+         const currency = history.currency.toLowerCase()
+         // Only process history less than today
+         if (billing_date < today) {
+            const amount = Number(history.amount);
+            // Add to month total
+            if (billing_date >= month_start) month_amount[currency] += amount
+            // Add to year total
+            if (billing_date >= year_start) year_amount[currency] += amount
+         }
+      })
+
+		const formatted_histories = histories?.reduce((groups, history) => {
+			const billing_date = new Date(history.billing_date)
+			const group_key = `${month_name[billing_date.getMonth()]} ${billing_date.getFullYear()}`
+			const month_day = month_name[billing_date.getMonth()] + ' ' + String(billing_date.getDate()).padStart(2,'0')
+			
+			if(!groups[group_key]) groups[group_key] = []
+			groups[group_key].push({ ...history, month_day })
+			
+			return groups
+		}, {})
+
+      res.status(200).json({ formatted_histories, month_amount, year_amount });
+   } catch (error) {
+      console.error('Error retrieving history: ', error);
+      res.status(500).json({ message: 'Error retrieving subscription history.' });
+   }
 })
 
 // Get notifications of current user
@@ -402,15 +496,14 @@ app.get('/total/budget_left', token_auth, async (req, res) => {
    // Start of month
    const today = new Date();
    const today_year = today.getFullYear();
-   const month_index = today.getMonth() + 1;
-   // Create strings for the ISO date (e.g., "08")
-   const current_month_str = String(month_index).padStart(2, '0');
-   const start_of_month = `${today_year}-${current_month_str}-01T00:00:00.000Z`;
+	const month_index = today.getMonth() + 1
+   const month = String(today.getMonth() + 1).padStart(2,'0');
+   const start_of_month = `${today_year}-${month}-01T00:00:00.000Z`;
    // Last of month: new Date(year, month, 0) gets the last day of the PREVIOUS month.
    // So passing today.getMonth() + 1 gets the last day of the CURRENT month.
    const last_day_date = new Date(today_year, today.getMonth() + 1, 0);
    const last_day = String(last_day_date.getDate()).padStart(2, '0');
-   const end_of_month = `${today_year}-${current_month_str}-${last_day}T23:59:59.999Z`;
+   const end_of_month = `${today_year}-${month}-${last_day}T23:59:59.999Z`;
    try {
       // Get total amount of subscriptions this month (Spent)
       const data = await prisma.subscription.groupBy({

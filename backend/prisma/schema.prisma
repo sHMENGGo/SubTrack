@@ -24,6 +24,7 @@ model User {
   categories    Category[]
   budgets       Budget[]
   notifications Notification[]
+  histories     PaymentHistory[]
 }
 
 model Subscription {
@@ -34,6 +35,7 @@ model Subscription {
   amount            Decimal          @db.Decimal(10, 2)
   currency          String           @default("USD")
   next_billing_date DateTime         @db.Date
+  duration          String           @default("monthly")
   is_active         Boolean          @default(true)
   created_at        DateTime         @default(now())
   updated_at        DateTime?        @updatedAt
@@ -61,6 +63,7 @@ model Category {
 
 model PaymentHistory {
   id              String       @id @default(uuid())
+  user_id         String       
   subscription_id String
   amount          Decimal      @db.Decimal(10, 2)
   currency        String       @default("USD")
@@ -68,6 +71,7 @@ model PaymentHistory {
   created_at      DateTime     @default(now())
 
   subscription    Subscription @relation(fields: [subscription_id], references: [id], onDelete: Cascade)
+  user          User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
 }
 
 model Budget {

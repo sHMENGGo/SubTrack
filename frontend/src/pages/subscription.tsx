@@ -101,8 +101,8 @@ export default function Subscription() {
       set_new_sub_amount(subscription.amount)
       set_new_sub_currency(subscription.currency)
       set_new_sub_is_active(subscription.is_active)
-      set_new_sub_month(subscription.month)
-      set_new_sub_day(subscription.day)
+      set_new_sub_month(subscription.prev_month)
+      set_new_sub_day(subscription.prev_day)
       set_new_sub_category_id(subscription.category_id)
       set_new_sub_duration(subscription.duration)
       set_show_edit_sub(true)
@@ -187,7 +187,7 @@ export default function Subscription() {
                      <h1 className="text-xl col-span-3 place-self-start w-full truncate " >{subscription.name}</h1>
                         <h2 style={{ backgroundColor: subscription.category?.color_hex || 'var(--border)' }}  className=" px-2 rounded-full w-fit place-self-center " >{subscription.category?.name || 'Uncategorized'}</h2>
                         <h2 className="place-self-center" >{subscription.currency === 'PHP' ? '₱' : '$'} {Number(subscription.amount).toFixed(2)}</h2>
-                        <h2 className="place-self-center" >{subscription.month} {subscription.day}</h2>
+                        <h2 className="place-self-center" >{subscription.month} {subscription.day}, {subscription.year}</h2>
                         <h2 className={` ${subscription.is_active ? 'bg-green-900/50' : ' bg-(--border)'} px-2 rounded-full  w-fit place-self-center`} >{subscription.is_active ? 'Active' : 'Inactive'}</h2>
                         <FontAwesomeIcon icon={faPenToSquare} onClick={() => open_edit_form(subscription)}  className="text-blue-800 hover:text-blue-700 transition-colors text-2xl cursor-pointer place-self-center" />
                         <FontAwesomeIcon icon={faTrash} onClick={() => open_delete_confirmation(subscription)}  className="text-red-800 hover:text-red-700 transition-colors text-2xl cursor-pointer" />
@@ -208,7 +208,7 @@ export default function Subscription() {
                      ))}
                      <option value={0} >None</option>
                   </select>
-                  <input type="number" value={sub_amount} onChange={(e) => {let val = Number(e.target.value); if(val > 9999999999) val = 9999999999; set_sub_amount(val)}} placeholder="Amount" required className="px-4 py-2.5 rounded-lg w-full mt-4" />
+                  <input type="number" value={sub_amount} onChange={(e) => {let val = Number(e.target.value); if(val > 99999999) val = 99999999; set_sub_amount(val)}} placeholder="Amount" required className="px-4 py-2.5 rounded-lg w-full mt-4" />
                   <select value={sub_currency} onChange={(e) => set_sub_currency(e.target.value)} required className="px-2 py-2.5 rounded-lg w-full mt-4" >
                      <option disabled value="" >Currency</option>
                      <option value="PHP">PHP</option>
@@ -242,20 +242,18 @@ export default function Subscription() {
                </form>
             </section>
          )}    
-
          {/* Edit form */}
          {show_edit_sub && (
             <section onClick={()=> set_show_edit_sub(false)}  className=" top-0 left-0 w-full h-full absolute bg-black/50 flex justify-center items-center" >
                <form onSubmit={(e)=> edit_sub(e)} onClick={(e)=> e.stopPropagation()}  className="w-full max-w-md bg-(--surface-1) rounded-xl p-8 gap-2 flex flex-col" >
                   <input type="text" value={new_sub_name} maxLength={40} onChange={(e) => set_new_sub_name(e.target.value)}  placeholder="Subscription Name" required  className="px-4 py-2.5 rounded-lg w-full" />
-                  <select value={new_sub_category_id} onChange={(e) => set_new_sub_category_id(Number(e.target.value))} required  className="px-2 py-2.5 rounded-lg w-full mt-4" >
-                     <option disabled value="" >Category</option>
+                  <select value={Number(new_sub_category_id)} onChange={(e) => set_new_sub_category_id(Number(e.target.value))} required  className="px-2 py-2.5 rounded-lg w-full mt-4" >
                      {categories.map((category) => (
                         <option key={category.id} value={category.id}>{category.name}</option>
                      ))}
                      <option value={0} >None</option>
                   </select>
-                  <input type="number" value={new_sub_amount} maxLength={20} onChange={(e) => set_new_sub_amount(Number(e.target.value))} placeholder="Amount" required className="px-4 py-2.5 rounded-lg w-full mt-4" />
+                  <input type="number" value={new_sub_amount} onChange={(e) => {let val = Number(e.target.value); if(val > 99999999) val = 99999999; set_new_sub_amount(val)}} placeholder="Amount" required className="px-4 py-2.5 rounded-lg w-full mt-4" />
                   <select value={new_sub_currency} onChange={(e) => set_new_sub_currency(e.target.value)} required className="px-2 py-2.5 rounded-lg w-full mt-4" >
                      <option disabled value="" >Currency</option>
                      <option value="PHP">PHP</option>
@@ -265,7 +263,7 @@ export default function Subscription() {
                      <input type="checkbox" id="active" checked={new_sub_is_active} onChange={(e) => set_new_sub_is_active(e.target.checked)} className="scale-110 peer cursor-pointer" />
                      <label htmlFor="active"  className="text-(--text-primary) peer-hover:text-blue-500 cursor-pointer " >Active</label>
                   </div>
-                  <label className="-mb-6 mt-2 text-(--text-muted) " >When did you start this subscription?</label>
+                  <label className="-mb-6 mt-2 text-(--text-muted) " >Last due date.</label>
                   <div className="flex gap-4 mt-4" >
                      <select value={new_sub_month} onChange={(e) => set_new_sub_month(e.target.value)} required  className="px-4 py-2.5 rounded-lg w-fit" >
                         <option disabled value="" >Month</option>

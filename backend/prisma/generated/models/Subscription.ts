@@ -44,6 +44,7 @@ export type SubscriptionMinAggregateOutputType = {
   amount: runtime.Decimal | null
   currency: string | null
   next_billing_date: Date | null
+  duration: string | null
   is_active: boolean | null
   created_at: Date | null
   updated_at: Date | null
@@ -57,6 +58,7 @@ export type SubscriptionMaxAggregateOutputType = {
   amount: runtime.Decimal | null
   currency: string | null
   next_billing_date: Date | null
+  duration: string | null
   is_active: boolean | null
   created_at: Date | null
   updated_at: Date | null
@@ -70,6 +72,7 @@ export type SubscriptionCountAggregateOutputType = {
   amount: number
   currency: number
   next_billing_date: number
+  duration: number
   is_active: number
   created_at: number
   updated_at: number
@@ -95,6 +98,7 @@ export type SubscriptionMinAggregateInputType = {
   amount?: true
   currency?: true
   next_billing_date?: true
+  duration?: true
   is_active?: true
   created_at?: true
   updated_at?: true
@@ -108,6 +112,7 @@ export type SubscriptionMaxAggregateInputType = {
   amount?: true
   currency?: true
   next_billing_date?: true
+  duration?: true
   is_active?: true
   created_at?: true
   updated_at?: true
@@ -121,6 +126,7 @@ export type SubscriptionCountAggregateInputType = {
   amount?: true
   currency?: true
   next_billing_date?: true
+  duration?: true
   is_active?: true
   created_at?: true
   updated_at?: true
@@ -221,6 +227,7 @@ export type SubscriptionGroupByOutputType = {
   amount: runtime.Decimal
   currency: string
   next_billing_date: Date
+  duration: string
   is_active: boolean
   created_at: Date
   updated_at: Date | null
@@ -257,6 +264,7 @@ export type SubscriptionWhereInput = {
   amount?: Prisma.DecimalFilter<"Subscription"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringFilter<"Subscription"> | string
   next_billing_date?: Prisma.DateTimeFilter<"Subscription"> | Date | string
+  duration?: Prisma.StringFilter<"Subscription"> | string
   is_active?: Prisma.BoolFilter<"Subscription"> | boolean
   created_at?: Prisma.DateTimeFilter<"Subscription"> | Date | string
   updated_at?: Prisma.DateTimeNullableFilter<"Subscription"> | Date | string | null
@@ -274,6 +282,7 @@ export type SubscriptionOrderByWithRelationInput = {
   amount?: Prisma.SortOrder
   currency?: Prisma.SortOrder
   next_billing_date?: Prisma.SortOrder
+  duration?: Prisma.SortOrder
   is_active?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -294,6 +303,7 @@ export type SubscriptionWhereUniqueInput = Prisma.AtLeast<{
   amount?: Prisma.DecimalFilter<"Subscription"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringFilter<"Subscription"> | string
   next_billing_date?: Prisma.DateTimeFilter<"Subscription"> | Date | string
+  duration?: Prisma.StringFilter<"Subscription"> | string
   is_active?: Prisma.BoolFilter<"Subscription"> | boolean
   created_at?: Prisma.DateTimeFilter<"Subscription"> | Date | string
   updated_at?: Prisma.DateTimeNullableFilter<"Subscription"> | Date | string | null
@@ -311,6 +321,7 @@ export type SubscriptionOrderByWithAggregationInput = {
   amount?: Prisma.SortOrder
   currency?: Prisma.SortOrder
   next_billing_date?: Prisma.SortOrder
+  duration?: Prisma.SortOrder
   is_active?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -332,6 +343,7 @@ export type SubscriptionScalarWhereWithAggregatesInput = {
   amount?: Prisma.DecimalWithAggregatesFilter<"Subscription"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringWithAggregatesFilter<"Subscription"> | string
   next_billing_date?: Prisma.DateTimeWithAggregatesFilter<"Subscription"> | Date | string
+  duration?: Prisma.StringWithAggregatesFilter<"Subscription"> | string
   is_active?: Prisma.BoolWithAggregatesFilter<"Subscription"> | boolean
   created_at?: Prisma.DateTimeWithAggregatesFilter<"Subscription"> | Date | string
   updated_at?: Prisma.DateTimeNullableWithAggregatesFilter<"Subscription"> | Date | string | null
@@ -343,6 +355,7 @@ export type SubscriptionCreateInput = {
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: string
   next_billing_date: Date | string
+  duration?: string
   is_active?: boolean
   created_at?: Date | string
   updated_at?: Date | string | null
@@ -360,6 +373,7 @@ export type SubscriptionUncheckedCreateInput = {
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: string
   next_billing_date: Date | string
+  duration?: string
   is_active?: boolean
   created_at?: Date | string
   updated_at?: Date | string | null
@@ -373,6 +387,7 @@ export type SubscriptionUpdateInput = {
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   next_billing_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  duration?: Prisma.StringFieldUpdateOperationsInput | string
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -390,6 +405,7 @@ export type SubscriptionUncheckedUpdateInput = {
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   next_billing_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  duration?: Prisma.StringFieldUpdateOperationsInput | string
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -405,6 +421,7 @@ export type SubscriptionCreateManyInput = {
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: string
   next_billing_date: Date | string
+  duration?: string
   is_active?: boolean
   created_at?: Date | string
   updated_at?: Date | string | null
@@ -416,6 +433,7 @@ export type SubscriptionUpdateManyMutationInput = {
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   next_billing_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  duration?: Prisma.StringFieldUpdateOperationsInput | string
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -429,6 +447,7 @@ export type SubscriptionUncheckedUpdateManyInput = {
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   next_billing_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  duration?: Prisma.StringFieldUpdateOperationsInput | string
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -452,6 +471,7 @@ export type SubscriptionCountOrderByAggregateInput = {
   amount?: Prisma.SortOrder
   currency?: Prisma.SortOrder
   next_billing_date?: Prisma.SortOrder
+  duration?: Prisma.SortOrder
   is_active?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
@@ -470,6 +490,7 @@ export type SubscriptionMaxOrderByAggregateInput = {
   amount?: Prisma.SortOrder
   currency?: Prisma.SortOrder
   next_billing_date?: Prisma.SortOrder
+  duration?: Prisma.SortOrder
   is_active?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
@@ -483,6 +504,7 @@ export type SubscriptionMinOrderByAggregateInput = {
   amount?: Prisma.SortOrder
   currency?: Prisma.SortOrder
   next_billing_date?: Prisma.SortOrder
+  duration?: Prisma.SortOrder
   is_active?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
@@ -640,6 +662,7 @@ export type SubscriptionCreateWithoutUserInput = {
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: string
   next_billing_date: Date | string
+  duration?: string
   is_active?: boolean
   created_at?: Date | string
   updated_at?: Date | string | null
@@ -655,6 +678,7 @@ export type SubscriptionUncheckedCreateWithoutUserInput = {
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: string
   next_billing_date: Date | string
+  duration?: string
   is_active?: boolean
   created_at?: Date | string
   updated_at?: Date | string | null
@@ -699,6 +723,7 @@ export type SubscriptionScalarWhereInput = {
   amount?: Prisma.DecimalFilter<"Subscription"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringFilter<"Subscription"> | string
   next_billing_date?: Prisma.DateTimeFilter<"Subscription"> | Date | string
+  duration?: Prisma.StringFilter<"Subscription"> | string
   is_active?: Prisma.BoolFilter<"Subscription"> | boolean
   created_at?: Prisma.DateTimeFilter<"Subscription"> | Date | string
   updated_at?: Prisma.DateTimeNullableFilter<"Subscription"> | Date | string | null
@@ -710,6 +735,7 @@ export type SubscriptionCreateWithoutCategoryInput = {
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: string
   next_billing_date: Date | string
+  duration?: string
   is_active?: boolean
   created_at?: Date | string
   updated_at?: Date | string | null
@@ -725,6 +751,7 @@ export type SubscriptionUncheckedCreateWithoutCategoryInput = {
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: string
   next_billing_date: Date | string
+  duration?: string
   is_active?: boolean
   created_at?: Date | string
   updated_at?: Date | string | null
@@ -764,6 +791,7 @@ export type SubscriptionCreateWithoutHistoryInput = {
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: string
   next_billing_date: Date | string
+  duration?: string
   is_active?: boolean
   created_at?: Date | string
   updated_at?: Date | string | null
@@ -780,6 +808,7 @@ export type SubscriptionUncheckedCreateWithoutHistoryInput = {
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: string
   next_billing_date: Date | string
+  duration?: string
   is_active?: boolean
   created_at?: Date | string
   updated_at?: Date | string | null
@@ -808,6 +837,7 @@ export type SubscriptionUpdateWithoutHistoryInput = {
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   next_billing_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  duration?: Prisma.StringFieldUpdateOperationsInput | string
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -824,6 +854,7 @@ export type SubscriptionUncheckedUpdateWithoutHistoryInput = {
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   next_billing_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  duration?: Prisma.StringFieldUpdateOperationsInput | string
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -836,6 +867,7 @@ export type SubscriptionCreateWithoutNotificationsInput = {
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: string
   next_billing_date: Date | string
+  duration?: string
   is_active?: boolean
   created_at?: Date | string
   updated_at?: Date | string | null
@@ -852,6 +884,7 @@ export type SubscriptionUncheckedCreateWithoutNotificationsInput = {
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: string
   next_billing_date: Date | string
+  duration?: string
   is_active?: boolean
   created_at?: Date | string
   updated_at?: Date | string | null
@@ -880,6 +913,7 @@ export type SubscriptionUpdateWithoutNotificationsInput = {
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   next_billing_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  duration?: Prisma.StringFieldUpdateOperationsInput | string
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -896,6 +930,7 @@ export type SubscriptionUncheckedUpdateWithoutNotificationsInput = {
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   next_billing_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  duration?: Prisma.StringFieldUpdateOperationsInput | string
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -909,6 +944,7 @@ export type SubscriptionCreateManyUserInput = {
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: string
   next_billing_date: Date | string
+  duration?: string
   is_active?: boolean
   created_at?: Date | string
   updated_at?: Date | string | null
@@ -920,6 +956,7 @@ export type SubscriptionUpdateWithoutUserInput = {
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   next_billing_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  duration?: Prisma.StringFieldUpdateOperationsInput | string
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -935,6 +972,7 @@ export type SubscriptionUncheckedUpdateWithoutUserInput = {
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   next_billing_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  duration?: Prisma.StringFieldUpdateOperationsInput | string
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -949,6 +987,7 @@ export type SubscriptionUncheckedUpdateManyWithoutUserInput = {
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   next_billing_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  duration?: Prisma.StringFieldUpdateOperationsInput | string
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -961,6 +1000,7 @@ export type SubscriptionCreateManyCategoryInput = {
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: string
   next_billing_date: Date | string
+  duration?: string
   is_active?: boolean
   created_at?: Date | string
   updated_at?: Date | string | null
@@ -972,6 +1012,7 @@ export type SubscriptionUpdateWithoutCategoryInput = {
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   next_billing_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  duration?: Prisma.StringFieldUpdateOperationsInput | string
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -987,6 +1028,7 @@ export type SubscriptionUncheckedUpdateWithoutCategoryInput = {
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   next_billing_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  duration?: Prisma.StringFieldUpdateOperationsInput | string
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1001,6 +1043,7 @@ export type SubscriptionUncheckedUpdateManyWithoutCategoryInput = {
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   next_billing_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  duration?: Prisma.StringFieldUpdateOperationsInput | string
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1054,6 +1097,7 @@ export type SubscriptionSelect<ExtArgs extends runtime.Types.Extensions.Internal
   amount?: boolean
   currency?: boolean
   next_billing_date?: boolean
+  duration?: boolean
   is_active?: boolean
   created_at?: boolean
   updated_at?: boolean
@@ -1072,6 +1116,7 @@ export type SubscriptionSelectCreateManyAndReturn<ExtArgs extends runtime.Types.
   amount?: boolean
   currency?: boolean
   next_billing_date?: boolean
+  duration?: boolean
   is_active?: boolean
   created_at?: boolean
   updated_at?: boolean
@@ -1087,6 +1132,7 @@ export type SubscriptionSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.
   amount?: boolean
   currency?: boolean
   next_billing_date?: boolean
+  duration?: boolean
   is_active?: boolean
   created_at?: boolean
   updated_at?: boolean
@@ -1102,12 +1148,13 @@ export type SubscriptionSelectScalar = {
   amount?: boolean
   currency?: boolean
   next_billing_date?: boolean
+  duration?: boolean
   is_active?: boolean
   created_at?: boolean
   updated_at?: boolean
 }
 
-export type SubscriptionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "category_id" | "name" | "amount" | "currency" | "next_billing_date" | "is_active" | "created_at" | "updated_at", ExtArgs["result"]["subscription"]>
+export type SubscriptionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "category_id" | "name" | "amount" | "currency" | "next_billing_date" | "duration" | "is_active" | "created_at" | "updated_at", ExtArgs["result"]["subscription"]>
 export type SubscriptionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   history?: boolean | Prisma.Subscription$historyArgs<ExtArgs>
   notifications?: boolean | Prisma.Subscription$notificationsArgs<ExtArgs>
@@ -1140,6 +1187,7 @@ export type $SubscriptionPayload<ExtArgs extends runtime.Types.Extensions.Intern
     amount: runtime.Decimal
     currency: string
     next_billing_date: Date
+    duration: string
     is_active: boolean
     created_at: Date
     updated_at: Date | null
@@ -1577,6 +1625,7 @@ export interface SubscriptionFieldRefs {
   readonly amount: Prisma.FieldRef<"Subscription", 'Decimal'>
   readonly currency: Prisma.FieldRef<"Subscription", 'String'>
   readonly next_billing_date: Prisma.FieldRef<"Subscription", 'DateTime'>
+  readonly duration: Prisma.FieldRef<"Subscription", 'String'>
   readonly is_active: Prisma.FieldRef<"Subscription", 'Boolean'>
   readonly created_at: Prisma.FieldRef<"Subscription", 'DateTime'>
   readonly updated_at: Prisma.FieldRef<"Subscription", 'DateTime'>

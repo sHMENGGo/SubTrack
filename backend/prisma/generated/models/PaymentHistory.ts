@@ -36,6 +36,7 @@ export type PaymentHistorySumAggregateOutputType = {
 
 export type PaymentHistoryMinAggregateOutputType = {
   id: string | null
+  user_id: string | null
   subscription_id: string | null
   amount: runtime.Decimal | null
   currency: string | null
@@ -45,6 +46,7 @@ export type PaymentHistoryMinAggregateOutputType = {
 
 export type PaymentHistoryMaxAggregateOutputType = {
   id: string | null
+  user_id: string | null
   subscription_id: string | null
   amount: runtime.Decimal | null
   currency: string | null
@@ -54,6 +56,7 @@ export type PaymentHistoryMaxAggregateOutputType = {
 
 export type PaymentHistoryCountAggregateOutputType = {
   id: number
+  user_id: number
   subscription_id: number
   amount: number
   currency: number
@@ -73,6 +76,7 @@ export type PaymentHistorySumAggregateInputType = {
 
 export type PaymentHistoryMinAggregateInputType = {
   id?: true
+  user_id?: true
   subscription_id?: true
   amount?: true
   currency?: true
@@ -82,6 +86,7 @@ export type PaymentHistoryMinAggregateInputType = {
 
 export type PaymentHistoryMaxAggregateInputType = {
   id?: true
+  user_id?: true
   subscription_id?: true
   amount?: true
   currency?: true
@@ -91,6 +96,7 @@ export type PaymentHistoryMaxAggregateInputType = {
 
 export type PaymentHistoryCountAggregateInputType = {
   id?: true
+  user_id?: true
   subscription_id?: true
   amount?: true
   currency?: true
@@ -187,6 +193,7 @@ export type PaymentHistoryGroupByArgs<ExtArgs extends runtime.Types.Extensions.I
 
 export type PaymentHistoryGroupByOutputType = {
   id: string
+  user_id: string
   subscription_id: string
   amount: runtime.Decimal
   currency: string
@@ -219,22 +226,26 @@ export type PaymentHistoryWhereInput = {
   OR?: Prisma.PaymentHistoryWhereInput[]
   NOT?: Prisma.PaymentHistoryWhereInput | Prisma.PaymentHistoryWhereInput[]
   id?: Prisma.StringFilter<"PaymentHistory"> | string
+  user_id?: Prisma.StringFilter<"PaymentHistory"> | string
   subscription_id?: Prisma.StringFilter<"PaymentHistory"> | string
   amount?: Prisma.DecimalFilter<"PaymentHistory"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringFilter<"PaymentHistory"> | string
   billing_date?: Prisma.DateTimeFilter<"PaymentHistory"> | Date | string
   created_at?: Prisma.DateTimeFilter<"PaymentHistory"> | Date | string
   subscription?: Prisma.XOR<Prisma.SubscriptionScalarRelationFilter, Prisma.SubscriptionWhereInput>
+  user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
 }
 
 export type PaymentHistoryOrderByWithRelationInput = {
   id?: Prisma.SortOrder
+  user_id?: Prisma.SortOrder
   subscription_id?: Prisma.SortOrder
   amount?: Prisma.SortOrder
   currency?: Prisma.SortOrder
   billing_date?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   subscription?: Prisma.SubscriptionOrderByWithRelationInput
+  user?: Prisma.UserOrderByWithRelationInput
 }
 
 export type PaymentHistoryWhereUniqueInput = Prisma.AtLeast<{
@@ -242,16 +253,19 @@ export type PaymentHistoryWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.PaymentHistoryWhereInput | Prisma.PaymentHistoryWhereInput[]
   OR?: Prisma.PaymentHistoryWhereInput[]
   NOT?: Prisma.PaymentHistoryWhereInput | Prisma.PaymentHistoryWhereInput[]
+  user_id?: Prisma.StringFilter<"PaymentHistory"> | string
   subscription_id?: Prisma.StringFilter<"PaymentHistory"> | string
   amount?: Prisma.DecimalFilter<"PaymentHistory"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringFilter<"PaymentHistory"> | string
   billing_date?: Prisma.DateTimeFilter<"PaymentHistory"> | Date | string
   created_at?: Prisma.DateTimeFilter<"PaymentHistory"> | Date | string
   subscription?: Prisma.XOR<Prisma.SubscriptionScalarRelationFilter, Prisma.SubscriptionWhereInput>
+  user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
 }, "id">
 
 export type PaymentHistoryOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
+  user_id?: Prisma.SortOrder
   subscription_id?: Prisma.SortOrder
   amount?: Prisma.SortOrder
   currency?: Prisma.SortOrder
@@ -269,6 +283,7 @@ export type PaymentHistoryScalarWhereWithAggregatesInput = {
   OR?: Prisma.PaymentHistoryScalarWhereWithAggregatesInput[]
   NOT?: Prisma.PaymentHistoryScalarWhereWithAggregatesInput | Prisma.PaymentHistoryScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"PaymentHistory"> | string
+  user_id?: Prisma.StringWithAggregatesFilter<"PaymentHistory"> | string
   subscription_id?: Prisma.StringWithAggregatesFilter<"PaymentHistory"> | string
   amount?: Prisma.DecimalWithAggregatesFilter<"PaymentHistory"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringWithAggregatesFilter<"PaymentHistory"> | string
@@ -283,10 +298,12 @@ export type PaymentHistoryCreateInput = {
   billing_date: Date | string
   created_at?: Date | string
   subscription: Prisma.SubscriptionCreateNestedOneWithoutHistoryInput
+  user: Prisma.UserCreateNestedOneWithoutHistoriesInput
 }
 
 export type PaymentHistoryUncheckedCreateInput = {
   id?: string
+  user_id: string
   subscription_id: string
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: string
@@ -301,10 +318,12 @@ export type PaymentHistoryUpdateInput = {
   billing_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   subscription?: Prisma.SubscriptionUpdateOneRequiredWithoutHistoryNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutHistoriesNestedInput
 }
 
 export type PaymentHistoryUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  user_id?: Prisma.StringFieldUpdateOperationsInput | string
   subscription_id?: Prisma.StringFieldUpdateOperationsInput | string
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
@@ -314,6 +333,7 @@ export type PaymentHistoryUncheckedUpdateInput = {
 
 export type PaymentHistoryCreateManyInput = {
   id?: string
+  user_id: string
   subscription_id: string
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: string
@@ -331,6 +351,7 @@ export type PaymentHistoryUpdateManyMutationInput = {
 
 export type PaymentHistoryUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  user_id?: Prisma.StringFieldUpdateOperationsInput | string
   subscription_id?: Prisma.StringFieldUpdateOperationsInput | string
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
@@ -350,6 +371,7 @@ export type PaymentHistoryOrderByRelationAggregateInput = {
 
 export type PaymentHistoryCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  user_id?: Prisma.SortOrder
   subscription_id?: Prisma.SortOrder
   amount?: Prisma.SortOrder
   currency?: Prisma.SortOrder
@@ -363,6 +385,7 @@ export type PaymentHistoryAvgOrderByAggregateInput = {
 
 export type PaymentHistoryMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  user_id?: Prisma.SortOrder
   subscription_id?: Prisma.SortOrder
   amount?: Prisma.SortOrder
   currency?: Prisma.SortOrder
@@ -372,6 +395,7 @@ export type PaymentHistoryMaxOrderByAggregateInput = {
 
 export type PaymentHistoryMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  user_id?: Prisma.SortOrder
   subscription_id?: Prisma.SortOrder
   amount?: Prisma.SortOrder
   currency?: Prisma.SortOrder
@@ -381,6 +405,48 @@ export type PaymentHistoryMinOrderByAggregateInput = {
 
 export type PaymentHistorySumOrderByAggregateInput = {
   amount?: Prisma.SortOrder
+}
+
+export type PaymentHistoryCreateNestedManyWithoutUserInput = {
+  create?: Prisma.XOR<Prisma.PaymentHistoryCreateWithoutUserInput, Prisma.PaymentHistoryUncheckedCreateWithoutUserInput> | Prisma.PaymentHistoryCreateWithoutUserInput[] | Prisma.PaymentHistoryUncheckedCreateWithoutUserInput[]
+  connectOrCreate?: Prisma.PaymentHistoryCreateOrConnectWithoutUserInput | Prisma.PaymentHistoryCreateOrConnectWithoutUserInput[]
+  createMany?: Prisma.PaymentHistoryCreateManyUserInputEnvelope
+  connect?: Prisma.PaymentHistoryWhereUniqueInput | Prisma.PaymentHistoryWhereUniqueInput[]
+}
+
+export type PaymentHistoryUncheckedCreateNestedManyWithoutUserInput = {
+  create?: Prisma.XOR<Prisma.PaymentHistoryCreateWithoutUserInput, Prisma.PaymentHistoryUncheckedCreateWithoutUserInput> | Prisma.PaymentHistoryCreateWithoutUserInput[] | Prisma.PaymentHistoryUncheckedCreateWithoutUserInput[]
+  connectOrCreate?: Prisma.PaymentHistoryCreateOrConnectWithoutUserInput | Prisma.PaymentHistoryCreateOrConnectWithoutUserInput[]
+  createMany?: Prisma.PaymentHistoryCreateManyUserInputEnvelope
+  connect?: Prisma.PaymentHistoryWhereUniqueInput | Prisma.PaymentHistoryWhereUniqueInput[]
+}
+
+export type PaymentHistoryUpdateManyWithoutUserNestedInput = {
+  create?: Prisma.XOR<Prisma.PaymentHistoryCreateWithoutUserInput, Prisma.PaymentHistoryUncheckedCreateWithoutUserInput> | Prisma.PaymentHistoryCreateWithoutUserInput[] | Prisma.PaymentHistoryUncheckedCreateWithoutUserInput[]
+  connectOrCreate?: Prisma.PaymentHistoryCreateOrConnectWithoutUserInput | Prisma.PaymentHistoryCreateOrConnectWithoutUserInput[]
+  upsert?: Prisma.PaymentHistoryUpsertWithWhereUniqueWithoutUserInput | Prisma.PaymentHistoryUpsertWithWhereUniqueWithoutUserInput[]
+  createMany?: Prisma.PaymentHistoryCreateManyUserInputEnvelope
+  set?: Prisma.PaymentHistoryWhereUniqueInput | Prisma.PaymentHistoryWhereUniqueInput[]
+  disconnect?: Prisma.PaymentHistoryWhereUniqueInput | Prisma.PaymentHistoryWhereUniqueInput[]
+  delete?: Prisma.PaymentHistoryWhereUniqueInput | Prisma.PaymentHistoryWhereUniqueInput[]
+  connect?: Prisma.PaymentHistoryWhereUniqueInput | Prisma.PaymentHistoryWhereUniqueInput[]
+  update?: Prisma.PaymentHistoryUpdateWithWhereUniqueWithoutUserInput | Prisma.PaymentHistoryUpdateWithWhereUniqueWithoutUserInput[]
+  updateMany?: Prisma.PaymentHistoryUpdateManyWithWhereWithoutUserInput | Prisma.PaymentHistoryUpdateManyWithWhereWithoutUserInput[]
+  deleteMany?: Prisma.PaymentHistoryScalarWhereInput | Prisma.PaymentHistoryScalarWhereInput[]
+}
+
+export type PaymentHistoryUncheckedUpdateManyWithoutUserNestedInput = {
+  create?: Prisma.XOR<Prisma.PaymentHistoryCreateWithoutUserInput, Prisma.PaymentHistoryUncheckedCreateWithoutUserInput> | Prisma.PaymentHistoryCreateWithoutUserInput[] | Prisma.PaymentHistoryUncheckedCreateWithoutUserInput[]
+  connectOrCreate?: Prisma.PaymentHistoryCreateOrConnectWithoutUserInput | Prisma.PaymentHistoryCreateOrConnectWithoutUserInput[]
+  upsert?: Prisma.PaymentHistoryUpsertWithWhereUniqueWithoutUserInput | Prisma.PaymentHistoryUpsertWithWhereUniqueWithoutUserInput[]
+  createMany?: Prisma.PaymentHistoryCreateManyUserInputEnvelope
+  set?: Prisma.PaymentHistoryWhereUniqueInput | Prisma.PaymentHistoryWhereUniqueInput[]
+  disconnect?: Prisma.PaymentHistoryWhereUniqueInput | Prisma.PaymentHistoryWhereUniqueInput[]
+  delete?: Prisma.PaymentHistoryWhereUniqueInput | Prisma.PaymentHistoryWhereUniqueInput[]
+  connect?: Prisma.PaymentHistoryWhereUniqueInput | Prisma.PaymentHistoryWhereUniqueInput[]
+  update?: Prisma.PaymentHistoryUpdateWithWhereUniqueWithoutUserInput | Prisma.PaymentHistoryUpdateWithWhereUniqueWithoutUserInput[]
+  updateMany?: Prisma.PaymentHistoryUpdateManyWithWhereWithoutUserInput | Prisma.PaymentHistoryUpdateManyWithWhereWithoutUserInput[]
+  deleteMany?: Prisma.PaymentHistoryScalarWhereInput | Prisma.PaymentHistoryScalarWhereInput[]
 }
 
 export type PaymentHistoryCreateNestedManyWithoutSubscriptionInput = {
@@ -425,16 +491,75 @@ export type PaymentHistoryUncheckedUpdateManyWithoutSubscriptionNestedInput = {
   deleteMany?: Prisma.PaymentHistoryScalarWhereInput | Prisma.PaymentHistoryScalarWhereInput[]
 }
 
-export type PaymentHistoryCreateWithoutSubscriptionInput = {
+export type PaymentHistoryCreateWithoutUserInput = {
   id?: string
+  amount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  currency?: string
+  billing_date: Date | string
+  created_at?: Date | string
+  subscription: Prisma.SubscriptionCreateNestedOneWithoutHistoryInput
+}
+
+export type PaymentHistoryUncheckedCreateWithoutUserInput = {
+  id?: string
+  subscription_id: string
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: string
   billing_date: Date | string
   created_at?: Date | string
 }
 
+export type PaymentHistoryCreateOrConnectWithoutUserInput = {
+  where: Prisma.PaymentHistoryWhereUniqueInput
+  create: Prisma.XOR<Prisma.PaymentHistoryCreateWithoutUserInput, Prisma.PaymentHistoryUncheckedCreateWithoutUserInput>
+}
+
+export type PaymentHistoryCreateManyUserInputEnvelope = {
+  data: Prisma.PaymentHistoryCreateManyUserInput | Prisma.PaymentHistoryCreateManyUserInput[]
+  skipDuplicates?: boolean
+}
+
+export type PaymentHistoryUpsertWithWhereUniqueWithoutUserInput = {
+  where: Prisma.PaymentHistoryWhereUniqueInput
+  update: Prisma.XOR<Prisma.PaymentHistoryUpdateWithoutUserInput, Prisma.PaymentHistoryUncheckedUpdateWithoutUserInput>
+  create: Prisma.XOR<Prisma.PaymentHistoryCreateWithoutUserInput, Prisma.PaymentHistoryUncheckedCreateWithoutUserInput>
+}
+
+export type PaymentHistoryUpdateWithWhereUniqueWithoutUserInput = {
+  where: Prisma.PaymentHistoryWhereUniqueInput
+  data: Prisma.XOR<Prisma.PaymentHistoryUpdateWithoutUserInput, Prisma.PaymentHistoryUncheckedUpdateWithoutUserInput>
+}
+
+export type PaymentHistoryUpdateManyWithWhereWithoutUserInput = {
+  where: Prisma.PaymentHistoryScalarWhereInput
+  data: Prisma.XOR<Prisma.PaymentHistoryUpdateManyMutationInput, Prisma.PaymentHistoryUncheckedUpdateManyWithoutUserInput>
+}
+
+export type PaymentHistoryScalarWhereInput = {
+  AND?: Prisma.PaymentHistoryScalarWhereInput | Prisma.PaymentHistoryScalarWhereInput[]
+  OR?: Prisma.PaymentHistoryScalarWhereInput[]
+  NOT?: Prisma.PaymentHistoryScalarWhereInput | Prisma.PaymentHistoryScalarWhereInput[]
+  id?: Prisma.StringFilter<"PaymentHistory"> | string
+  user_id?: Prisma.StringFilter<"PaymentHistory"> | string
+  subscription_id?: Prisma.StringFilter<"PaymentHistory"> | string
+  amount?: Prisma.DecimalFilter<"PaymentHistory"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  currency?: Prisma.StringFilter<"PaymentHistory"> | string
+  billing_date?: Prisma.DateTimeFilter<"PaymentHistory"> | Date | string
+  created_at?: Prisma.DateTimeFilter<"PaymentHistory"> | Date | string
+}
+
+export type PaymentHistoryCreateWithoutSubscriptionInput = {
+  id?: string
+  amount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  currency?: string
+  billing_date: Date | string
+  created_at?: Date | string
+  user: Prisma.UserCreateNestedOneWithoutHistoriesInput
+}
+
 export type PaymentHistoryUncheckedCreateWithoutSubscriptionInput = {
   id?: string
+  user_id: string
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: string
   billing_date: Date | string
@@ -467,20 +592,45 @@ export type PaymentHistoryUpdateManyWithWhereWithoutSubscriptionInput = {
   data: Prisma.XOR<Prisma.PaymentHistoryUpdateManyMutationInput, Prisma.PaymentHistoryUncheckedUpdateManyWithoutSubscriptionInput>
 }
 
-export type PaymentHistoryScalarWhereInput = {
-  AND?: Prisma.PaymentHistoryScalarWhereInput | Prisma.PaymentHistoryScalarWhereInput[]
-  OR?: Prisma.PaymentHistoryScalarWhereInput[]
-  NOT?: Prisma.PaymentHistoryScalarWhereInput | Prisma.PaymentHistoryScalarWhereInput[]
-  id?: Prisma.StringFilter<"PaymentHistory"> | string
-  subscription_id?: Prisma.StringFilter<"PaymentHistory"> | string
-  amount?: Prisma.DecimalFilter<"PaymentHistory"> | runtime.Decimal | runtime.DecimalJsLike | number | string
-  currency?: Prisma.StringFilter<"PaymentHistory"> | string
-  billing_date?: Prisma.DateTimeFilter<"PaymentHistory"> | Date | string
-  created_at?: Prisma.DateTimeFilter<"PaymentHistory"> | Date | string
+export type PaymentHistoryCreateManyUserInput = {
+  id?: string
+  subscription_id: string
+  amount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  currency?: string
+  billing_date: Date | string
+  created_at?: Date | string
+}
+
+export type PaymentHistoryUpdateWithoutUserInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  currency?: Prisma.StringFieldUpdateOperationsInput | string
+  billing_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  subscription?: Prisma.SubscriptionUpdateOneRequiredWithoutHistoryNestedInput
+}
+
+export type PaymentHistoryUncheckedUpdateWithoutUserInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  subscription_id?: Prisma.StringFieldUpdateOperationsInput | string
+  amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  currency?: Prisma.StringFieldUpdateOperationsInput | string
+  billing_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type PaymentHistoryUncheckedUpdateManyWithoutUserInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  subscription_id?: Prisma.StringFieldUpdateOperationsInput | string
+  amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  currency?: Prisma.StringFieldUpdateOperationsInput | string
+  billing_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type PaymentHistoryCreateManySubscriptionInput = {
   id?: string
+  user_id: string
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: string
   billing_date: Date | string
@@ -493,10 +643,12 @@ export type PaymentHistoryUpdateWithoutSubscriptionInput = {
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   billing_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  user?: Prisma.UserUpdateOneRequiredWithoutHistoriesNestedInput
 }
 
 export type PaymentHistoryUncheckedUpdateWithoutSubscriptionInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  user_id?: Prisma.StringFieldUpdateOperationsInput | string
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   billing_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -505,6 +657,7 @@ export type PaymentHistoryUncheckedUpdateWithoutSubscriptionInput = {
 
 export type PaymentHistoryUncheckedUpdateManyWithoutSubscriptionInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  user_id?: Prisma.StringFieldUpdateOperationsInput | string
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   billing_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -515,36 +668,43 @@ export type PaymentHistoryUncheckedUpdateManyWithoutSubscriptionInput = {
 
 export type PaymentHistorySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  user_id?: boolean
   subscription_id?: boolean
   amount?: boolean
   currency?: boolean
   billing_date?: boolean
   created_at?: boolean
   subscription?: boolean | Prisma.SubscriptionDefaultArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["paymentHistory"]>
 
 export type PaymentHistorySelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  user_id?: boolean
   subscription_id?: boolean
   amount?: boolean
   currency?: boolean
   billing_date?: boolean
   created_at?: boolean
   subscription?: boolean | Prisma.SubscriptionDefaultArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["paymentHistory"]>
 
 export type PaymentHistorySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  user_id?: boolean
   subscription_id?: boolean
   amount?: boolean
   currency?: boolean
   billing_date?: boolean
   created_at?: boolean
   subscription?: boolean | Prisma.SubscriptionDefaultArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["paymentHistory"]>
 
 export type PaymentHistorySelectScalar = {
   id?: boolean
+  user_id?: boolean
   subscription_id?: boolean
   amount?: boolean
   currency?: boolean
@@ -552,24 +712,29 @@ export type PaymentHistorySelectScalar = {
   created_at?: boolean
 }
 
-export type PaymentHistoryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "subscription_id" | "amount" | "currency" | "billing_date" | "created_at", ExtArgs["result"]["paymentHistory"]>
+export type PaymentHistoryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "subscription_id" | "amount" | "currency" | "billing_date" | "created_at", ExtArgs["result"]["paymentHistory"]>
 export type PaymentHistoryInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   subscription?: boolean | Prisma.SubscriptionDefaultArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
 export type PaymentHistoryIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   subscription?: boolean | Prisma.SubscriptionDefaultArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
 export type PaymentHistoryIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   subscription?: boolean | Prisma.SubscriptionDefaultArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
 
 export type $PaymentHistoryPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "PaymentHistory"
   objects: {
     subscription: Prisma.$SubscriptionPayload<ExtArgs>
+    user: Prisma.$UserPayload<ExtArgs>
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
+    user_id: string
     subscription_id: string
     amount: runtime.Decimal
     currency: string
@@ -970,6 +1135,7 @@ readonly fields: PaymentHistoryFieldRefs;
 export interface Prisma__PaymentHistoryClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   subscription<T extends Prisma.SubscriptionDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SubscriptionDefaultArgs<ExtArgs>>): Prisma.Prisma__SubscriptionClient<runtime.Types.Result.GetResult<Prisma.$SubscriptionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1000,6 +1166,7 @@ export interface Prisma__PaymentHistoryClient<T, Null = never, ExtArgs extends r
  */
 export interface PaymentHistoryFieldRefs {
   readonly id: Prisma.FieldRef<"PaymentHistory", 'String'>
+  readonly user_id: Prisma.FieldRef<"PaymentHistory", 'String'>
   readonly subscription_id: Prisma.FieldRef<"PaymentHistory", 'String'>
   readonly amount: Prisma.FieldRef<"PaymentHistory", 'Decimal'>
   readonly currency: Prisma.FieldRef<"PaymentHistory", 'String'>
