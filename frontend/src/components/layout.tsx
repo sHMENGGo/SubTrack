@@ -20,11 +20,13 @@ export default function Layout() {
       }; check_login()
    }, [])
 
+   {checking && ( <h2  className="w-full h-full bg-black/50 absolute text-3xl " >Checking...</h2> )}
+
    return (
       
-      <main className="flex flex-col p-4 w-full h-full bg-(--page-bg) gap-4" >
+      <main className="flex flex-col p-4 h-full bg-(--page-bg) gap-4 " >
          <Header/>
-         <section className="w-full" ><Outlet/></section>
+         <section ><Outlet/></section>
       </main>
    )
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { custom_fetch } from "../services/api"
+import toast from "react-hot-toast"
 
 
 export default function History() {
@@ -10,7 +11,10 @@ export default function History() {
          try {
             const data = await custom_fetch('category')
             set_categories(data.categories)
-         } catch (error) { console.error('Retrieving categories failed', error) }
+         } catch (err: any) {
+            toast.error(err.message)
+            console.error('Retrieving categories failed', err) 
+         }
       }
       get_category()
    }, [])
@@ -31,7 +35,10 @@ export default function History() {
             set_formatted_histories(data.formatted_histories)
             set_month_amount(data.month_amount)
             set_year_amount(data.year_amount)
-         } catch (error) { console.error('Retrieving history failed', error) }
+         } catch (err: any) {
+            toast.error(err.message) 
+            console.error('Retrieving history failed', err) 
+         }
       }
       get_history()
    }, [filter_category, filter_days])
@@ -81,7 +88,7 @@ export default function History() {
                   ))}
                </div>
             )) : (
-               <h2 className=" place-self-center text-xl text-center w-full" >No History.</h2>
+               <h2 className=" place-self-center text-3xl text-center w-full" >No History.</h2>
             )}
          </section>
       </main>

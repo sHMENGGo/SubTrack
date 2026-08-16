@@ -99,7 +99,6 @@ model Notification {
   message         String       
   is_read         Boolean      @default(false)
   notify_at       DateTime     
-  created_at      DateTime     @default(now())
 
   user            User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
   subscription    Subscription @relation(fields: [subscription_id], references: [id], onDelete: Cascade)

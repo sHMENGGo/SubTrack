@@ -1,6 +1,7 @@
 import { custom_fetch } from "../services/api"
 import { useEffect, useState } from "react"
 import Progress from "../components/progress"
+import toast from "react-hot-toast"
 
 export default function Dashboard() {
    // Get monthly spend
@@ -12,7 +13,10 @@ export default function Dashboard() {
             const data = await custom_fetch('monthly_spend')
             set_monthly_usd(data.monthly_usd)
             set_monthly_php(data.monthly_php)
-         } catch (error) {console.log('Error getting monthly spend: ', error)}
+         } catch (err: any) {
+            toast.error(err.message)
+            console.log('Error getting monthly spend: ', err)
+         }
       }; get_monthly_spend()
    }, [])
 
@@ -23,7 +27,10 @@ export default function Dashboard() {
          try {
             const data = await custom_fetch('total/active_sub')
             set_active_subs(data.active_subs)
-         } catch (error) {console.log('Error getting active subscriptions: ', error)}
+         } catch (err: any) {
+            toast.error(err.message)
+            console.log('Error getting active subscriptions: ', err)
+         }
       }; get_active_subs()
    }, [])
 
@@ -34,7 +41,10 @@ export default function Dashboard() {
          try {
             const data = await custom_fetch('total/due_1_week')
             set_due_1_week(data.due_1_week)
-         } catch (error) {console.log('Error getting active subscriptions: ', error)}
+         } catch (err: any) {
+            toast.error(err.message)
+            console.log('Error getting active subscriptions: ', err)
+         }
       }; get_due_1_week()
    }, [])
 
@@ -47,7 +57,10 @@ export default function Dashboard() {
             const data = await custom_fetch('total/budget')
             set_usd_budget(data.total_usd)
             set_php_budget(data.total_php)
-         } catch (error) {console.log('Error getting total budget: ', error)}
+         } catch (err: any) {
+            toast.error(err.message)
+            console.log('Error getting total budget: ', err)
+         }
       }; get_budget()
    }, [])
 
@@ -58,7 +71,10 @@ export default function Dashboard() {
          try {
             const data = await custom_fetch('renewals')
             set_renewals(data.formatted_renewals)
-         } catch (error) {console.log('Error getting total budget: ', error)}
+         } catch (err: any) {
+            toast.error(err.message)
+            console.log('Error getting total budget: ', err)
+         }
       }; get_renewals()
    }, [])
 
@@ -70,10 +86,13 @@ export default function Dashboard() {
          try {
             const data = await custom_fetch('category_spent', {
                method: 'POST', 
-               body: JSON.stringify({ money: toggle })
+               body: JSON.stringify({ toggle })
             })
             set_category_spent(data.spent_category)
-         } catch (error) {console.log('Error getting total budget: ', error)}
+         } catch (err: any) {
+            toast.error(err.message)
+            console.log('Error getting total budget: ', err)
+         }
       }; get_category_spent()
    }, [toggle])
 
@@ -82,9 +101,12 @@ export default function Dashboard() {
    useEffect(()=> {
       const get_notifications = async ()=> {
          try {
-            const data = await custom_fetch('notification')
-            set_notifications(data.notifications)
-         } catch (error) {console.log('Error getting total budget: ', error)}
+            const data = await custom_fetch('notification/today')
+            set_notifications(data.formatted_notifications)
+         } catch (err: any) {
+            toast.error(err.message)
+            console.log('Error getting total budget: ', err)
+         }
       }; get_notifications()
    }, [])
 
@@ -95,7 +117,10 @@ export default function Dashboard() {
          try {
             const data = await custom_fetch('total/budget_left')
             set_budget(data.budget)
-         } catch (error) {console.log('Error getting budget left this month: ', error)}
+         } catch (err: any) {
+            toast.error(err.message)
+            console.log('Error getting budget left this month: ', err)
+         }
       }; get_budget_left()
    }, [])
 
@@ -125,6 +150,7 @@ export default function Dashboard() {
          <section className="grid grid-cols-5 gap-4 items-start">
             {/* Left half */}
             <div className="flex flex-col col-span-3 gap-4">
+               {/* Renewals */}
                <div className="bg-(--surface-2) rounded-lg p-4 border border-(--border) gap-3 flex flex-col">
                   <h1 className="text-xl">Upcoming Renewals</h1>
                   {renewals.length !== 0 ? renewals.map(renewal => (
@@ -137,7 +163,7 @@ export default function Dashboard() {
                         </div>
                      </div>
                   )) : (
-                     <h2 className="place-self-center text-2xl " >No upcoming renewals.</h2>
+                     <h2 className="place-self-center text-xl " >No upcoming renewals.</h2>
                   )}
                </div>
                {/* Spend by category */}
@@ -151,21 +177,30 @@ export default function Dashboard() {
                         <h1 className="z-10" >USD</h1>
                      </div>
                   </div>
-                  {category_spent?.map(c => (
+                  {category_spent.length !== 0 ? category_spent.map(c => (
                      <Progress page="dashboard_category" key={c.category_id} id={c.category_id} color={c.category_hex} name={c.category_name} current={c.total_amount} max={c.category_budget} symbol={toggle === 'PHP' ? '₱' : '$'} />
-                  ))}
+                  )) : (
+                     <h2 className="place-self-center text-xl " >No Category.</h2>
+                  )}
                </div>
             </div>
             {/* Right half */}
             <div className="flex flex-col gap-4 col-span-2">
-               <div className="bg-(--surface-2) border border-(--border) rounded-lg p-4 gap-3 flex flex-col max-h-50 overflow-hidden">
+               <div className=" bg-(--surface-2) border border-(--border) rounded-lg p-4 gap-3 flex flex-col max-h-50 overflow-x-hidden">
                   <h1 className="text-xl" >Notifications</h1>
                   <div>
-                     {notifications?.map(notif => (
-                        <div key={notif.notify_at} className="border-b border-(--border) p-1 " >
-                           <h2>{notif.message}</h2>
+                     {notifications.length !== 0 ? notifications.map(notif => (
+                        <div key={notif.id} className="border-b border-(--border) p-1 flex justify-between " >
+                           <div className="flex gap-2" >
+                              <h1>{notif.subscription.name}</h1>
+                              <h2>{notif.message}</h2>
+                           </div>
+                           
+                           <h1>{notif.subscription.currency === 'PHP' ? '₱' : '$'} {notif.subscription.amount}</h1>
                         </div>
-                     ))}
+                     )) : (
+                        <h2 className="place-self-center text-xl " >No notification today.</h2>
+                     )}
                   </div>
                </div>
                <div className="bg-(--surface-2) rounded-lg p-4 border border-(--border) flex flex-col gap-3 ">

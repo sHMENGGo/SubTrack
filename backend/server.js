@@ -4,8 +4,10 @@ const express = require('express')
 const cors = require('cors')
 const jwt = require('jsonwebtoken')
 const cookie_parser = require('cookie-parser')
+const { login_limiter, register_limiter, two_fa_limiter } = require('./rate_limit')
+const bcrypt = require('bcrypt')
+const { send_verification_email } = require('./mailer')
 require('dotenv').config()
-require('./cron') // Import the notification automation script
 
 // Prisma 
 const adapter = new PrismaPg({connectionString: process.env.DATABASE_URL})
@@ -16,6 +18,7 @@ const app = express()
 app.use(cors({ origin: 'http://localhost:5173', credentials: true }))
 app.use(express.json())
 app.use(cookie_parser())
+app.set('trust proxy', 1)
 const PORT = process.env.PORT
 
 // Health Check Route
@@ -35,24 +38,46 @@ const token_auth = (req, res, next) => {
 	} catch (error) {res.status(400).json({ message: 'Invalid token.' })}
 }
 
+// Route that cron-job.org use to run daily_automation.js
+const { run_daily_job } = require('./daily_automation')
+app.post('/cron/daily-job', async (req, res) => {
+   const secret = req.headers['X-cron-secret']
+   if (secret !== process.env.CRON_SECRET) return res.status(401).json({ message: 'Unauthorized' })
+   try {
+      await run_daily_job()
+      res.json({ message: 'Daily job completed.' })
+   } catch (err) {
+      console.error('Daily job error:', err)
+      res.status(500).json({ message: 'Daily job failed.' })
+   }
+})
+
+
 // =============================== Routes =======================================
 
 // Check if currently logged in
 app.get('/me', token_auth, async (req, res)=>{res.status(200).json({id: req.user.id, name: req.user.name})})
 
 // Login route
-app.post('/login', async (req, res) => {
+app.post('/login', login_limiter,async (req, res) => {
 	const { email, password, remember_me } = req.body
+
+	if(typeof email !== 'string' || email.trim().length === 0) return res.status(400).json({ message: 'Invalid email or password.' })  
+	if(typeof password !== 'string' || password.trim().length === 0) return res.status(400).json({ message: 'Invalid email or password.' })  
+	if(typeof remember_me !== 'boolean') return res.status(400).json({ message: 'Invalid check box.' })  
+	
 	try {
 		const user = await prisma.user.findUnique({ where: { email: email } })
-		if (!user || user.password !== password) {return res.status(401).json({ message: 'Invalid email or password.' })}
-		const token = jwt.sign({ id: user.id, name: user.name }, process.env.JWT_SECRET, { expiresIn: '30d' })
+		const password_match = user && await bcrypt.compare(password, user.password)
+		if (!user || !password_match) {return res.status(400).json({ message: 'Invalid email or password.' })}
+		const token = jwt.sign({ id: user.id, name: user.name }, process.env.JWT_SECRET, { expiresIn: (remember_me ? '30d' : '1hr') })
 		
 		res.cookie('token', token, { 
 			httpOnly: true, 
 			secure: process.env.NODE_ENV === 'production',
 			sameSite: 'strict',
-			...(remember_me && { maxAge: 30 * 24 * 60 * 60 * 1000 }) // 30 days in milliseconds
+			// secure: true,
+			...(remember_me ? { maxAge: 30 * 24 * 60 * 60 * 1000 } : { maxAge: 60 * 60 * 1000 }) // 30 days or 1 hours
 		})
 		
 		res.status(200).json({ message: 'Login successful!' })
@@ -67,7 +92,8 @@ app.get('/logout', token_auth, (req, res) => {
 		res.clearCookie('token', {
 			httpOnly: true, 
 			secure: process.env.NODE_ENV === 'production',
-			sameSite: 'strict'
+			sameSite: 'strict',
+			// secure: true
 		})
 		res.status(200).json({ message: 'Logout successful!' })
 	} catch (error) {
@@ -76,22 +102,70 @@ app.get('/logout', token_auth, (req, res) => {
 	}
 })
 
-// Register route
-app.post('/register', async (req, res) => {
-   const { reg_name, reg_password, reg_email } = req.body
+// Register, send verification code
+app.post('/register/send_code', register_limiter, async (req, res) => {
+	const { reg_email } = req.body
+
+	if(!reg_email) return res.status(400).json({ message: 'Email is required.' })
+	if(typeof reg_email !== 'string' || reg_email.trim().length === 0) return res.status(400).json({ message: 'Invalid email.' })  
+
+	try {
+		const email = await prisma.user.findUnique({ where: { email: reg_email } })
+		if(email) return res.status(400).json({ message: 'Email already used.' })
+
+      const code = Math.floor(100000 + Math.random() * 900000).toString() // 6 digits
+		const verification_token = jwt.sign({ reg_email, code }, process.env.JWT_SECRET, { expiresIn: '10m' })
+		
+		res.cookie('verification_token', verification_token, {
+         httpOnly: true,
+         maxAge: 10 * 60 * 1000, // 10 min
+         sameSite: 'lax',
+			// secure: true
+      })
+
+		await send_verification_email(reg_email, code)
+      res.json({ message: 'Verification code sent.' })
+   } catch (err) {
+      console.error(err)
+      res.status(500).json({ message: 'Failed to send verification code.' })
+   }
+})
+
+// Register, verify code
+app.post('/register/verify_code', two_fa_limiter, async (req, res) => {
+   const { code, reg_name, reg_password, reg_email } = req.body
+	const verification_token = req.cookies.verification_token
+
+	if(!verification_token) return res.status(400).json({ message: 'No token sent.' })
+	if(typeof code !== 'string' || code.trim().length === 0) return res.status(400).json({ message: 'Invalid code.' })  
+	if(typeof reg_name !== 'string' || reg_name.trim().length === 0) return res.status(400).json({ message: 'Invalid name.' })  
+	if(typeof reg_password !== 'string' || reg_password.trim().length === 0) return res.status(400).json({ message: 'Invalid password.' })  
+	if(typeof reg_email !== 'string' || reg_email.trim().length === 0) return res.status(400).json({ message: 'Invalid email.' })  
+
    try {
-      await prisma.user.create({data: {
+		const password_hash = await bcrypt.hash(reg_password, 11)
+		const decoded = jwt.verify(verification_token, process.env.JWT_SECRET)
+		if(decoded.code === code){
+			await prisma.user.create({data: {
         	name: reg_name, 
-        	password: reg_password, 
+        	password: password_hash, 
         	email: reg_email}})
-      res.status(201).json({ message: 'Account registered successfully!', success:true })
-   } catch (error) {res.status(500).json({ message: 'Error registering user!' })}
+		}
+      res.status(201).json({ message: 'Account registered successfully.' })
+   } catch (error) {
+		console.log(error)
+		res.status(500).json({ message: 'Error registering user.' })
+	}
 })
 
 // Get subscription of current user
 app.post('/subscription', token_auth, async (req, res) => {
 	const { filter_category, filter_status } = req.body
+	
+	if(typeof filter_status !== 'string') return res.status(400).json({ message: 'Invalid status.' })  
+	
 	const month_name = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
 	try {
 		const subscriptions = await prisma.subscription.findMany({ 
 			where: { 
@@ -99,7 +173,8 @@ app.post('/subscription', token_auth, async (req, res) => {
 				category_id: filter_category === 0 ? null : (filter_category || undefined),
 				is_active: filter_status === 'all' ? undefined : filter_status === 'true' ? true : filter_status === 'false' ? false : undefined
 			},
-			include: { category: { select: { name: true, color_hex: true } } }
+			include: { category: { select: { name: true, color_hex: true } } },
+			orderBy: { next_billing_date: 'asc' }
 		})
 		
 		const formatted_subs = subscriptions.map(sub => {
@@ -134,19 +209,38 @@ app.post('/subscription', token_auth, async (req, res) => {
 // Add subscription for current user
 app.post('/add/subscription', token_auth, async (req, res) => {
 	const { sub_name, sub_amount, sub_currency, sub_month, sub_day, sub_category_id, sub_duration } = req.body
-	const date = new Date()
-	date.setDate(sub_day)
-	switch (sub_duration) {
-		case 'weekly': date.setDate(date.getDate() + 7); break
-		case 'monthly': date.setMonth(date.getMonth() + 1);break
-		case 'yearly': date.setFullYear(date.getFullYear() + 1); break
+	
+	if(typeof sub_name !== 'string' || sub_name.trim().length === 0) return res.status(400).json({ message: 'Invalid name.' })  
+	if(typeof sub_amount !== 'number' || sub_amount.length === 0) return res.status(400).json({ message: 'Invalid amount.' })  
+	if(typeof sub_currency !== 'string' || sub_currency.trim().length === 0) return res.status(400).json({ message: 'Invalid currency.' })  
+	if(typeof sub_month !== 'string' || sub_month.trim().length === 0) return res.status(400).json({ message: 'Invalid month.' })  
+	if(typeof sub_day !== 'number' || sub_day.length === 0) return res.status(400).json({ message: 'Invalid day.' })  
+	if(typeof sub_category_id !== 'number' || sub_category_id.length === 0) return res.status(400).json({ message: 'Invalid category.' })  
+	if(typeof sub_duration !== 'string') return res.status(400).json({ message: 'Invalid duration.' })  
+	
+	const month_name = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+	const today = new Date()
+	today.setDate(sub_day)
+	today.setHours(0, 0, 0, 0)
+
+	const month_index = month_name.indexOf(sub_month) + 1
+	let base_date = new Date(today.getFullYear(), month_index, sub_day)
+
+	if (base_date > today) base_date.setFullYear(base_date.getFullYear() - 1)
+	const next_date = new Date(base_date)
+	while (next_date < today) {
+		switch (sub_duration) {
+			case 'weekly': next_date.setDate(next_date.getDate() + 7); break
+			case 'monthly': next_date.setMonth(next_date.getMonth() + 1); break
+			case 'yearly': next_date.setFullYear(next_date.getFullYear() + 1); break
+		}
 	}
 	// Format the date to YYYY-MM-DD
-	const year = date.getFullYear()
-	const month = String(date.getMonth() + 1).padStart(2, '0')
-	const day = String(date.getDate()).padStart(2, '0')
-	const date_string = `${year}-${month}-${day}T00:00:00.000Z` // This will set the time to midnight UTC to satisfy js and prisma
+	const date_string = `${today.getFullYear()}-${String(next_date.getMonth() + 1).padStart(2,'0')}-${String(next_date.getDate()).padStart(2,'0')}T00:00:00.000Z`
 	try {
+		const sub = await prisma.subscription.findFirst({ where: { name: sub_name, user_id: req.user.id } })
+		if(sub) return res.status(400).json({ message: 'Subscription already exist.' })
+
 		await prisma.subscription.create({ data: {
 			name: sub_name,
 			amount: sub_amount,
@@ -165,6 +259,15 @@ app.post('/add/subscription', token_auth, async (req, res) => {
 // Edit subscription of current user
 app.put('/edit/subscription', token_auth, async (req, res) => {
 	const { sub_id, new_sub_name, new_sub_amount, new_sub_currency, new_sub_is_active, new_sub_month, new_sub_day, new_sub_category_id, new_sub_duration } = req.body 
+
+	if(typeof new_sub_name !== 'string' || new_sub_name.trim().length === 0) return res.status(400).json({ message: 'Invalid name.' })  
+	if(typeof new_sub_currency !== 'string' || new_sub_currency.trim().length === 0) return res.status(400).json({ message: 'Invalid currency.' })  
+	if(typeof new_sub_is_active !== 'boolean') return res.status(400).json({ message: 'Invalid checkbox.' })  
+	if(typeof new_sub_month !== 'string' || new_sub_month.trim().length === 0) return res.status(400).json({ message: 'Invalid month.' })  
+	if(typeof new_sub_day !== 'number' || new_sub_day.length === 0) return res.status(400).json({ message: 'Invalid day.' })  
+	if(typeof new_sub_category_id !== 'number' || new_sub_category_id.length === 0) return res.status(400).json({ message: 'Invalid category.' })  
+	if(typeof new_sub_duration !== 'string' || new_sub_duration.trim().length === 0) return res.status(400).json({ message: 'Invalid duration.' })  
+	
 	const month_name = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 	const today = new Date()
 	today.setHours(0, 0, 0, 0)
@@ -175,7 +278,7 @@ app.put('/edit/subscription', token_auth, async (req, res) => {
 	if (base_date > today) base_date.setFullYear(base_date.getFullYear() - 1)
 	// Advance one cycle at a time until we pass today
 	const next_date = new Date(base_date)
-	while (next_date <= today) {
+	while (next_date < today) {
 		switch (new_sub_duration) {
 			case 'weekly': next_date.setDate(next_date.getDate() + 7); break
 			case 'monthly': next_date.setMonth(next_date.getMonth() + 1); break
@@ -183,7 +286,11 @@ app.put('/edit/subscription', token_auth, async (req, res) => {
 		}
 	}
 	const new_date_string = `${next_date.getFullYear()}-${String(next_date.getMonth() + 1).padStart(2, '0')}-${String(next_date.getDate()).padStart(2, '0')}T00:00:00.000Z`
+	
 	try {
+		const sub = await prisma.subscription.findFirst({ where: { name: new_sub_name, user_id: req.user.id } })
+		if(sub) return res.status(400).json({ message: 'Subscription already exist.' })
+
 		await prisma.subscription.update({ 
 			where: { id: sub_id, user_id: req.user.id }, 
 			data: {
@@ -205,6 +312,8 @@ app.put('/edit/subscription', token_auth, async (req, res) => {
 // Delete subscription of current user
 app.delete('/delete/subscription', token_auth, async (req, res) => {
 	const { subscription_id } = req.body
+	if(typeof subscription_id !== 'string' || subscription_id.trim().length === 0) return res.status(400).json({ message: 'Invalid subscription.' })  
+	
 	try {
 		await prisma.subscription.delete({ where: { id: subscription_id, user_id: req.user.id } })
 		res.status(200).json({ message: 'Subscription deleted successfully.' })
@@ -222,7 +331,13 @@ app.get('/category', token_auth, async (req, res) => {
 // Add category for current user
 app.post('/add/category', token_auth, async (req, res) => {
 	const { category_name, category_color } = req.body
+	if(typeof category_name !== 'string' || category_name.trim().length === 0) return res.status(400).json({ message: 'Invalid name.' })  
+	if(typeof category_color !== 'string' || category_color.trim().length === 0) return res.status(400).json({ message: 'Invalid color.' })  
+	
 	try {
+		const category = await prisma.category.findFirst({ where: { name: category_name, user_id: req.user.id } })
+		if(category) return res.status(400).json({ message: 'Category already exist.' })  
+
 		await prisma.category.create({ data: {
 			name: category_name,
 			color_hex: category_color,
@@ -235,6 +350,11 @@ app.post('/add/category', token_auth, async (req, res) => {
 // Edit category of current user
 app.put('/edit/category', token_auth, async (req, res) => {
 	const { category_id, new_category_name, new_category_color } = req.body
+
+	if(typeof category_id !== 'number' || category_id.length === 0) return res.status(400).json({ message: 'Invalid category.' })  
+	if(typeof new_category_name !== 'string' || new_category_name.trim().length === 0) return res.status(400).json({ message: 'Invalid name.' })  
+	if(typeof new_category_color !== 'string' || new_category_color.trim().length === 0) return res.status(400).json({ message: 'Invalid color.' })  
+
 	try {
 		await prisma.category.update({ 
 			where: { id: category_id, user_id: req.user.id }, 
@@ -250,6 +370,8 @@ app.put('/edit/category', token_auth, async (req, res) => {
 // Delete category of current user
 app.delete('/delete/category', token_auth, async (req, res) => {
 	const { category_id } = req.body
+	if(typeof category_id !== 'number' || category_id.length === 0) return res.status(400).json({ message: 'Invalid category.' })  
+
 	try {
 		await prisma.category.delete({ where: { id: category_id, user_id: req.user.id } })
 		res.status(200).json({ message: 'Category deleted successfully.' })
@@ -267,6 +389,13 @@ app.get('/budget', token_auth, async (req, res) => {
 // Add budget for current user
 app.post('/add/budget', token_auth, async (req, res) => {
 	const { budget_amount, category_id, input_month_index, input_year, toggle } = req.body
+	
+	if(typeof budget_amount !== 'number' || budget_amount.length === 0) return res.status(400).json({ message: 'Invalid amount.' })  
+	if(typeof category_id !== 'number' || category_id.length === 0) return res.status(400).json({ message: 'Invalid category.' })  
+	if(typeof input_month_index !== 'number' || input_month_index.length === 0) return res.status(400).json({ message: 'Invalid month.' })  
+	if(typeof input_year !== 'number' || input_year.length === 0) return res.status(400).json({ message: 'Invalid year.' })  
+	if(typeof toggle !== 'string' || toggle.trim().length === 0) return res.status(400).json({ message: 'Invalid currency.' })  
+	
 	try {
 		await prisma.budget.create({ data: {
 			amount: budget_amount,
@@ -286,6 +415,11 @@ app.post('/add/budget', token_auth, async (req, res) => {
 // Edit budget of current user
 app.put('/edit/budget', token_auth, async (req, res) => {
 	const { budget_id, new_budget_amount, input_month_index, input_year } = req.body
+
+	if(typeof budget_id !== 'string' || budget_id.trim().length === 0) return res.status(400).json({ message: 'Invalid budget.' })  
+	if(typeof input_month_index !== 'number' || input_month_index.length === 0) return res.status(400).json({ message: 'Invalid month.' })  
+	if(typeof input_year !== 'number' || input_year.length === 0) return res.status(400).json({ message: 'Invalid year.' })  
+
 	try {
 		await prisma.budget.update({ 
 			where: { id: budget_id, month: input_month_index + 1, year: input_year, user_id: req.user.id },
@@ -301,6 +435,12 @@ app.put('/edit/budget', token_auth, async (req, res) => {
 // Delete budget of current user
 app.delete('/delete/budget', token_auth, async (req, res) => {
 	const { budget_to_delete, toggle, input_month_index, input_year } = req.body
+
+	if(typeof budget_to_delete !== 'string' || budget_to_delete.trim().length === 0) return res.status(400).json({ message: 'Invalid budget.' })  
+	if(typeof toggle !== 'string' || toggle.trim().length === 0) return res.status(400).json({ message: 'Invalid currency.' })  
+	if(typeof input_month_index !== 'number' || input_month_index.length === 0) return res.status(400).json({ message: 'Invalid month.' })  
+	if(typeof input_year !== 'number' || input_year.length === 0) return res.status(400).json({ message: 'Invalid year.' })  
+
 	try {
 		await prisma.budget.delete({ 
 			where: { 
@@ -321,8 +461,10 @@ app.delete('/delete/budget', token_auth, async (req, res) => {
 // Get subscription history of current user
 app.post('/history', token_auth, async (req, res) => {
 	const { filter_category, filter_days } = req.body
-	const month_name = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
+	if(typeof filter_days !== 'string') return res.status(400).json({ message: 'Invalid day.' })  
+
+	const month_name = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
    const today = new Date();
    const today_year = today.getFullYear();
    const month = String(today.getMonth() + 1).padStart(2, '0');
@@ -396,15 +538,78 @@ app.post('/history', token_auth, async (req, res) => {
 
 // Get notifications of current user
 app.get('/notification', token_auth, async (req, res) => {
+	const month_name = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 	try {
-		const notifications = await prisma.notification.findMany({ where: { user_id: req.user.id, is_read: false } })
-		res.status(200).json({ notifications })
-	} catch (error) {res.status(500).json({ message: 'Error retrieving notifications.' })}
+		const notifications = await prisma.notification.findMany({ 
+			where: { user_id: req.user.id },
+			include: { subscription: true },
+			orderBy: { notify_at: 'desc' }
+		})
+		const formatted_notifications = notifications.map(notif => ({
+			...notif, 
+			amount: Number(notif.subscription.amount).toFixed(2),
+			month: month_name[notif.subscription.next_billing_date.getMonth()],
+			day: String(notif.subscription.next_billing_date.getDate()).padStart(2, 0)
+		}))
+
+		let notif_count = 0
+		for(let notif of formatted_notifications) {if(notif.is_read === false) notif_count = notif_count + 1}
+
+		res.status(200).json({ formatted_notifications, notif_count })
+	} catch (error) {
+		console.error('Error retrieving notifications: ', error)
+		res.status(500).json({ message: 'Error retrieving notifications.' })
+	}
+})
+
+// Get notifications of current user today
+app.get('/notification/today', token_auth, async (req, res) => {
+	const month_name = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+	const today = new Date()
+	const today_start = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}T00:00:00.000Z`
+	const today_end = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate() + 1).padStart(2, '0')}T00:00:00.000Z`
+	try {
+		const notifications = await prisma.notification.findMany({ 
+			where: { user_id: req.user.id, notify_at: { gte: today_start, lte: today_end }},
+			include: { subscription: true },
+			orderBy: { notify_at: 'desc' }
+		})
+		const formatted_notifications = notifications.map(notif => ({
+			...notif, 
+			amount: Number(notif.subscription.amount).toFixed(2),
+			month: month_name[notif.subscription.next_billing_date.getMonth()],
+			day: String(notif.subscription.next_billing_date.getDate()).padStart(2, 0)
+		}))
+
+		let notif_count = 0
+		for(let notif of formatted_notifications) {if(notif.is_read === false) notif_count = notif_count + 1}
+
+		res.status(200).json({ formatted_notifications, notif_count })
+	} catch (error) {
+		console.error('Error retrieving notifications: ', error)
+		res.status(500).json({ message: 'Error retrieving notifications.' })
+	}
+})
+
+// Mark all notifications as read
+app.put('/notification/mark_all_as_read', token_auth, async (req, res)=> {
+	try {
+		await prisma.notification.updateMany({
+			where: { user_id: req.user.id, is_read: false },
+			data: { is_read: true }
+		})
+		res.status(200).json({ message: 'Successfully marked all as read' })
+	} catch (error) {
+		console.log('Error marking all as read: ', error)
+		res.status(500).json({ message: 'Error marking all as read.' })
+	}
 })
 
 // Delete notification of current user
 app.delete('/delete/notification', token_auth, async (req, res) => {
 	const { notification_id } = req.body
+	if(typeof notification_id !== 'string' || notification_id.trim().length === 0) return res.status(400).json({ message: 'Invalid notification.' })  
+	
 	try {
 		await prisma.notification.delete({ where: { id: notification_id, user_id: req.user.id } })
 		res.status(200).json({ message: 'Notification deleted successfully.' })
@@ -594,14 +799,17 @@ app.get('/renewals', token_auth, async (req, res) => {
 
 // Get active expenses by category
 app.post('/category_spent', token_auth, async (req, res) => {
-   const { money } = req.body
-   if (!money) return res.status(400).json({ message: 'Currency is required.' })
+   const { toggle } = req.body
+
+   if (!toggle) return res.status(400).json({ message: 'Currency is required.' })
+	if(typeof toggle !== 'string' || toggle.trim().length === 0) return res.status(400).json({ message: 'Invalid currency.' })  
+
    try {
       // Get subscriptions spent (active only)
       const grouped_spent = await prisma.subscription.groupBy({
          by: ['category_id'],
          where: {
-            currency: money,
+            currency: toggle,
             user_id: req.user.id,
             category_id: { not: null },
             is_active: true
@@ -620,7 +828,7 @@ app.post('/category_spent', token_auth, async (req, res) => {
       const month_index = today.getMonth() + 1
       const budgets = await prisma.budget.findMany({
          where: {
-            currency: money,
+            currency: toggle,
             month: month_index,
             year: today_year,
             user_id: req.user.id,
@@ -683,6 +891,10 @@ app.get('/category_summary', token_auth, async (req, res) => {
 app.post('/budget_summary', token_auth, async (req, res)=> {
 	const { toggle, input_month_index, input_year } = req.body
 
+	if(typeof toggle !== 'string' || toggle.trim().length === 0) return res.status(400).json({ message: 'Invalid currency.' })  
+	if(typeof input_month_index !== 'number' || input_month_index.length === 0) return res.status(400).json({ message: 'Invalid month.' })  
+	if(typeof input_year !== 'number' || input_year.length === 0) return res.status(400).json({ message: 'Invalid year.' })  
+
 	const date = new Date()
 	// Create strings for the ISO date (e.g., "08")
    const current_month_str = String(input_month_index + 1).padStart(2, '0');
@@ -714,6 +926,11 @@ app.post('/budget_summary', token_auth, async (req, res)=> {
 // Get categories, budget, and subs amount based on month
 app.post('/category_budget', token_auth, async (req, res)=> {
 	const { toggle, input_month_index, input_year } = req.body
+
+	if(typeof toggle !== 'string' || toggle.trim().length === 0) return res.status(400).json({ message: 'Invalid currency.' })  
+	if(typeof input_month_index !== 'number' || input_month_index.length === 0) return res.status(400).json({ message: 'Invalid month.' })  
+	if(typeof input_year !== 'number' || input_year.length === 0) return res.status(400).json({ message: 'Invalid year.' })  
+
 	const date = new Date()
 	// Create strings for the ISO date (e.g., "08")
    const current_month_str = String(input_month_index + 1).padStart(2, '0');

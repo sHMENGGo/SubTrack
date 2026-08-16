@@ -14,7 +14,10 @@ export default function Subscription() {
          try {
             const data = await custom_fetch('category')
             set_categories(data.categories)
-         } catch (error) {console.error("Error fetching categories:", error)}
+         } catch (err: any) {
+            toast.error(err.message)
+            console.error("Error fetching categories:", err)
+         }
       }
       get_categories()
    }, [])
@@ -31,7 +34,10 @@ export default function Subscription() {
                body: JSON.stringify({ filter_category, filter_status }),
             })
             set_subscriptions(data.subscriptions)
-         } catch (error) {console.error("Error fetching subscriptions:", error)}
+         } catch (err: any) {
+            toast.error(err.message)
+            console.error("Error fetching subscriptions:", err)
+         }
       }
       get_subscriptions()
    }, [filter_category, filter_status, refresh])
@@ -56,7 +62,7 @@ export default function Subscription() {
    const day = date.getDate()
    const [sub_day, set_sub_day] = useState<number>(day)
    const [sub_category_id, set_sub_category_id] = useState<number | string>("")
-   const [sub_duration, set_sub_duration] = useState<string>()
+   const [sub_duration, set_sub_duration] = useState<string>('monthly')
    const add_sub = async (e : any) => {
       e.preventDefault()
       try {
@@ -76,9 +82,9 @@ export default function Subscription() {
          set_show_add_sub(false)
          set_sub_name("")
          toast.success(data.message)
-      } catch (error) {
-         toast.error("Error adding subscription!")
-         console.error("Error adding subscription:", error)
+      } catch (err: any) {
+         toast.error(err.message)
+         console.error("Error adding subscription:", err)
       }
    }
 
@@ -127,9 +133,9 @@ export default function Subscription() {
          set_refresh(!refresh)
          set_show_edit_sub(false)
          toast.success(data.message)
-      } catch (error) {
-         toast.error("Error editing subscription!")
-         console.error("Error editing subscription:", error)
+      } catch (err: any) {
+         toast.error(err.message)
+         console.error("Error editing subscription:", err)
       }
    }
 
@@ -153,9 +159,9 @@ export default function Subscription() {
          set_show_delete_sub(false)
          set_sub_to_delete([])
          toast.success(data.message)
-      } catch (error) {
-         toast.error("Error deleting subscription!")
-         console.error("Error deleting subscription:", error)
+      } catch (err: any) {
+         toast.error(err.message)
+         console.error("Error deleting subscription:", err)
       }
    }
 
@@ -193,14 +199,14 @@ export default function Subscription() {
                         <FontAwesomeIcon icon={faTrash} onClick={() => open_delete_confirmation(subscription)}  className="text-red-800 hover:text-red-700 transition-colors text-2xl cursor-pointer" />
                   </div>
                ))
-            ) : (<h1 className=" place-self-center text-xl text-center w-full" >No subscriptions found.</h1>)}
+            ) : (<h2  className="mt-10 place-self-center text-3xl text-center w-full" >No subscriptions found.</h2>)}
          </section>
 
          {/* Add Form */}
          {show_add_sub && (
             <section onClick={()=> set_show_add_sub(false)}  className=" top-0 left-0 w-full h-full absolute bg-black/50 flex justify-center items-center" >
                <form onSubmit={(e)=> add_sub(e)} onClick={(e)=> e.stopPropagation()}  className="w-full max-w-md bg-(--surface-1) rounded-xl p-8 gap-2 flex flex-col" >
-                  <input type="text" value={sub_name} maxLength={40} onChange={(e) => set_sub_name(e.target.value)}  placeholder="Subscription Name" required  className="px-4 py-2.5 rounded-lg w-full" />
+                  <input type="text" value={sub_name} maxLength={40} onChange={(e) => set_sub_name(e.target.value)}  placeholder="Subscription Name" required autoFocus  className="px-4 py-2.5 rounded-lg w-full" />
                   <select value={sub_category_id} onChange={(e) => set_sub_category_id(Number(e.target.value))} required  className="px-2 py-2.5 rounded-lg w-full mt-4" >
                      <option disabled value="" >Category</option>
                      {categories.map((category) => (

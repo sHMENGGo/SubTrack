@@ -40,9 +40,9 @@ export default function Budget() {
                body: JSON.stringify({ toggle, input_month_index, input_year })
             })
             set_budget_summary(data.budget_summary)
-         } catch (error) {
-            toast.error('Getting budget summary failed')
-            console.error('Getting budget failed. ', error)
+         } catch (err: any) {
+            toast.error(err.message)
+            console.error('Getting budget failed. ', err)
          }
       }
       get_budget()
@@ -58,9 +58,9 @@ export default function Budget() {
                body: JSON.stringify({ toggle, input_month_index, input_year })
             })
             set_categories_budgets(data.categories_budgets)
-         } catch (error) {
-            toast.error('Getting categories budgets failed')
-            console.error('Getting categories budgets failed. ', error)
+         } catch (err: any) {
+            toast.error(err.message)
+            console.error('Getting categories budgets failed. ', err)
          }
       }
       get_categories_budgets()
@@ -84,9 +84,9 @@ export default function Budget() {
          set_refresh(!refresh)
          set_show_add_budget(false)
          toast.success(data.message)
-      } catch (error) {
-         toast.error('Adding budget failed')
-         console.error('Adding budget failed. ', error)
+      } catch (err: any) {
+         toast.error(err.message)
+         console.error('Adding budget failed. ', err)
       }
    }
 
@@ -109,9 +109,9 @@ export default function Budget() {
          set_refresh(!refresh)
          set_show_edit_budget(false)
          toast.success(data.message)
-      } catch (error) {
-         toast.error('Editing budget failed')
-         console.error('Editing budget failed. ', error)
+      } catch (err: any) {
+         toast.error(err.message)
+         console.error('Editing budget failed. ', err)
       }
    }
 
@@ -135,9 +135,9 @@ export default function Budget() {
          set_refresh(!refresh)
          set_show_delete_budget(false)
          toast.success(data.message)
-      } catch (error) {
-         toast.error('Deleting budget failed')
-         console.error('Deleting budget failed. ', error)
+      } catch (err: any) {
+         toast.error(err.message)
+         console.error('Deleting budget failed. ', err)
       }
    }
 
@@ -168,7 +168,7 @@ export default function Budget() {
          </section>
          {/* Budget details */}
          <section className="flex flex-col gap-8 p-4" >
-            {categories_budgets.map(cat_bud => (
+            {categories_budgets.length !== 0 ? categories_budgets.map(cat_bud => (
                <div key={cat_bud.id}  className="flex items-center gap-4" >
                <Progress page="budget" color={cat_bud.color_hex} name={cat_bud.name} current={cat_bud.amount} max={cat_bud.budget} left={cat_bud.left} symbol={toggle === 'PHP' ? '₱' : '$'} />
                {cat_bud.budget !== "0.00" ? (
@@ -180,7 +180,9 @@ export default function Budget() {
                   <button onClick={()=> open_add_budget(cat_bud)}  className="px-4 py-2.5 text-nowrap  rounded-lg bg-blue-900 text-(--text-primary) hover:bg-blue-800 transition-colors" >Set Budget</button>
                )}
                </div>
-            ))}
+            )) : (
+               <h2 className="text-3xl place-self-center mt-10" >No Category.</h2>
+            )}
          </section>
 
          {/* Add budget */}

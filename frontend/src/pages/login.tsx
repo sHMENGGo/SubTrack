@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router'
 import { custom_fetch } from '../services/api';
 import toast from 'react-hot-toast';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEye, faEyeSlash, faMagnifyingGlassChart, faListCheck, faCircleInfo, faWallet, faTriangleExclamation, faBell, faB } from '@fortawesome/free-solid-svg-icons';
+import { faEye, faEyeSlash, faMagnifyingGlassChart, faListCheck, faCircleInfo, faWallet, faTriangleExclamation, faBell } from '@fortawesome/free-solid-svg-icons';
 
 export default function Login() {
    const navigate = useNavigate()
@@ -15,6 +15,7 @@ export default function Login() {
    const [password, set_password] = useState('');
    const [remember_me, set_remember_me] = useState(false);
    const [loading, set_loading] = useState(false)
+   const [login_error, set_login_error] = useState('')
    const login = async (e: React.FormEvent)=> {
       e.preventDefault()
       set_loading(true)
@@ -25,23 +26,67 @@ export default function Login() {
          })
          navigate('/dashboard', {replace: true})
          toast.success(data.message)
-      } catch(err) {console.log('Error login: ', err)}
+      } catch(err: any) {
+         toast.error(err.message)
+         console.log('Error login: ', err.message)
+      }
       finally {set_loading(false)}
    }
 
    // Register
-   const [name, set_name] = useState('');
-   const [reg_email, set_reg_email] = useState('');
-   const [reg_password, set_reg_password] = useState('');
-   const [confirm_password, set_confirm_password] = useState('');
-   const handleSubmit = (e: React.FormEvent) => {
-      e.preventDefault();
-      if (password !== confirm_password) {
-         console.error("Passwords do not match!");
-         return
+   const [reg_error, set_reg_error] = useState('')
+   const [show_code_form, set_show_code_form] = useState(false)
+   const [sending_code, set_sending_code] = useState(false)
+   const [reg_name, set_reg_name] = useState('')
+   const [reg_email, set_reg_email] = useState('')
+   const [reg_password, set_reg_password] = useState('')
+   const [confirm_password, set_confirm_password] = useState('')
+   // Send code
+   const register_send_code = async (e: React.SubmitEvent) => {
+      e.preventDefault()
+      if (reg_password !== confirm_password) {set_reg_error("Password doesn't match."); return}
+      set_sending_code(true)
+      try {
+         const data = await custom_fetch('register/send_code', {
+            method: 'POST',
+            body: JSON.stringify({ reg_email })
+         })
+         toast.success(data.message)
+         set_show_code_form(true)
+      } catch(err: any) {
+         toast.error(err.message)
+         console.log('Error sending code: ', err)
       }
-      // In a real app, this is where you call your API to register the user
-      console.log("Submitting:", { name, reg_email, reg_password });
+      finally{ set_sending_code(false) }
+   }
+   // Verify code
+   const [verifying, set_verifying]= useState(false)
+   const [code, set_code]= useState('')
+   const register_verify_code = async (e: React.SubmitEvent) => {
+      e.preventDefault()
+      set_verifying(true)
+      try {
+         const data = await custom_fetch('register/verify_code', {
+            method: 'POST',
+            body: JSON.stringify({ code, reg_name, reg_email, reg_password })
+         })
+         toast.success(data.message)
+         set_show_code_form(false)
+         set_code('')
+         set_show_form('login')
+      } catch(err: any) {
+         toast.error(err.message)
+         console.log('Error verifying code: ', err)
+      }
+      finally { (set_verifying(false)) }
+   }
+
+   const clear_reg_input = ()=> {
+      set_reg_name('')
+      set_reg_email('')
+      set_reg_password('')
+      set_confirm_password('')
+      set_reg_error('')
    }
 
    return (
@@ -50,7 +95,7 @@ export default function Login() {
          <section className='lg:w-2/3 h-full border border-(--border) flex flex-col gap-6 bg-(--surface-1) lg:rounded-2xl p-4 ' >
             <div className='flex text-4xl font-bold mb-2 ' >
                <h1 className='' >$ubTrack</h1>
-               <FontAwesomeIcon icon={faMagnifyingGlassChart} className=' text-(--text-primary) p-1 ' />
+               <FontAwesomeIcon icon={faMagnifyingGlassChart} className=' text-(--text-primary) ' />
             </div>
             <h1 className='text-5xl font-semibold ' >Never lose track of what you're paying for</h1>
             <h2>SubTrack keeps every subscription in one place. See what's due, watch your spending against a budget, and get notified before a renewal catches you off guard.</h2>
@@ -99,7 +144,7 @@ export default function Login() {
                   {/* Email Input */}
                   <div>
                      <label htmlFor="email" className="block text-sm font-medium text-(--text-muted) mb-1.5">Email</label>
-                     <input type="email" id="email" value={email} onChange={(e) => set_email(e.target.value)} placeholder="name@example.com" required  className="w-full px-4 py-2.5 rounded-lg" />
+                     <input type="email" id="email" value={email} onChange={(e) => set_email(e.target.value)} placeholder="name@example.com" required autoFocus  className="w-full px-4 py-2.5 rounded-lg" />
                   </div>
                   {/* Password Input */}
                   <div className='relative' >
@@ -111,16 +156,17 @@ export default function Login() {
                         <FontAwesomeIcon icon={faEyeSlash} onClick={()=> set_show_password(true)}  className='text-(--text-muted) text-lg absolute right-2 top-[55%] cursor-pointer hover:text-(--text-secondary) ' />
                      )}
                   </div>
+                  <p className='text-(--fill-danger)' >{login_error}</p>
                   <div className="flex items-center justify-between mt-1">
                      <label className="flex items-center gap-2 cursor-pointer group">
                         <input type="checkbox" checked={remember_me} onChange={(e) => set_remember_me(e.target.checked)}  className="w-4 h-4 rounded cursor-pointer transition-colors" />
-                        <span className="text-(--text-muted) group-hover:text-blue-500 transition-colors text-xs md:text-md ">Remember me</span>
+                        <span className="text-(--text-muted) group-hover:text-blue-500 transition-colors text-xs md:text-[1rem] ">Remember me</span>
                      </label>
                      <p  className=" text-xs md:text-sm font-semibold text-blue-700 hover:text-blue-500 cursor-pointer transition-colors">Forgot password?</p>
                   </div>
                   <button type="submit"  className="w-full mt-2 bg-blue-700 text-(--text-primary) font-semibold py-2.5 rounded-lg hover:bg-blue-500 active:bg-slate-950 transition-all duration-200" >{loading ? 'Signing in...' : 'Sign in'}</button>
                </form>
-               <p className="text-center text-sm text-(--text-muted) mt-8 flex justify-center flex-nowrap">Don't have an account?<span onClick={()=> set_show_form('register')}  className="font-semibold text-blue-700 hover:text-blue-500 transition-colors ml-1 cursor-pointer" >Register here</span></p>
+               <p className="text-center text-sm text-(--text-muted) mt-8 flex justify-center flex-nowrap">Don't have an account?<span onClick={()=> {set_show_form('register'); clear_reg_input()}}  className="font-semibold text-blue-700 hover:text-blue-500 transition-colors ml-1 cursor-pointer" >Register here</span></p>
             </section>
          )}
          
@@ -131,30 +177,42 @@ export default function Login() {
                   <h1 className="text-3xl font-bold tracking-tight">Create an account</h1>
                   <h2  className="text-sm">Please enter your details to sign up.</h2>
                </div>
-               <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+               <form onSubmit={register_send_code} className="flex flex-col gap-5">
                   {/* Name Input */}
                   <div>
                      <label htmlFor="name" className="block text-sm font-medium text-(--text-muted) mb-1.5">Name</label>
-                     <input type="text" id="name" value={name} onChange={(e) => set_name(e.target.value)} placeholder="John Doe" required  className="w-full px-4 py-2.5 rounded-lg" />
+                     <input type="text" id="name" value={reg_name} onChange={(e) => set_reg_name(e.target.value)} placeholder="John Doe" required autoFocus  className="w-full px-4 py-2.5 rounded-lg" />
                   </div>
                   {/* Email Input */}
                   <div>
                      <label htmlFor="email" className="block text-sm font-medium text-(--text-muted) mb-1.5">Email</label>
-                     <input type="email" id="email" value={email} onChange={(e) => set_email(e.target.value)} placeholder="name@example.com" required  className="w-full px-4 py-2.5 rounded-lg" />
+                     <input type="email" id="email" value={reg_email} onChange={(e) => set_reg_email(e.target.value)} placeholder="name@example.com" required  className="w-full px-4 py-2.5 rounded-lg" />
                   </div>
                   {/* Password Input */}
                   <div>
                      <label htmlFor="password" className="block text-sm font-medium text-(--text-muted) mb-1.5">Password</label>
-                     <input type="password" id="password" value={password} onChange={(e) => set_password(e.target.value)} placeholder="••••••••" required  className="w-full px-4 py-2.5 rounded-lg" />
+                     <input type="password" id="password" value={reg_password} onChange={(e) => set_reg_password(e.target.value)} placeholder="••••••••" required  className="w-full px-4 py-2.5 rounded-lg" />
                   </div>
                   {/* Repeat Password Input */}
                   <div>
-                     <label htmlFor="confirmPassword" className="block text-sm font-medium text-(--text-muted) mb-1.5">Repeat Password</label>
+                     <label htmlFor="confirmPassword" className="block text-sm font-medium text-(--text-muted) mb-1.5">Confirm Password</label>
                      <input type="password" id="confirmPassword" value={confirm_password} onChange={(e) => set_confirm_password(e.target.value)} placeholder="••••••••" required  className="w-full px-4 py-2.5 rounded-lg" />
+                     <p className='text-(--fill-danger)' >{reg_error}</p>
                   </div>
-                  <button type="submit"  className="w-full mt-2 bg-blue-700 text-(--text-primary) font-semibold py-2.5 rounded-lg hover:bg-blue-500  transition-all duration-200" >Sign Up</button>
+                  <button type="submit"  className="w-full mt-2 bg-blue-700 text-(--text-primary) font-semibold py-2.5 rounded-lg hover:bg-blue-500 active:bg-blue-700  transition-all duration-200" >{sending_code ? 'Sending code...' : 'Sign up'}</button>
                </form>
-               <p className="text-center text-xs md:text-sm text-(--text-muted) mt-2 flex justify-center flex-nowrap">Already have an account?<span onClick={()=> set_show_form('login')}  className="font-semibold text-blue-700 hover:text-blue-500 transition-colors ml-1 cursor-pointer">Sign in here</span></p>
+               <p className="text-center text-xs md:text-sm text-(--text-muted) mt-2 flex justify-center flex-nowrap">Already have an account?<span onClick={()=> {set_show_form('login')}}  className="font-semibold text-blue-700 hover:text-blue-500 transition-colors ml-1 cursor-pointer">Sign in here</span></p>
+            </section>
+         )}
+
+         {/* Input code form */}
+         {show_code_form && (
+            <section onClick={()=> set_show_code_form(false)}  className=" top-0 left-0 w-full h-full absolute bg-black/50 flex justify-center items-center" >
+               <form onSubmit={register_verify_code} onClick={(e)=> e.stopPropagation()}  className="w-full max-w-md bg-(--surface-1) rounded-xl p-8 gap-2 flex flex-col items-center" >
+                  <h1>Input 6 digit verification code sent to your email</h1>
+                  <input type="text" name='code' value={code} onChange={(e) => set_code(e.target.value)} required  className="px-4 py-2.5 rounded-lg text-center tracking wider " />
+                  <button type="submit"  className="px-4 py-2.5 outline-none active:bg-blue-700 mt-4 rounded-lg bg-blue-900 text-(--text-primary) hover:bg-blue-800 transition-colors" >{verifying ? 'Verifying...' : 'Verify'}</button>
+               </form>
             </section>
          )}
       </main>
