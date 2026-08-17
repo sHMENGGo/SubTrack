@@ -7,6 +7,7 @@ const cookie_parser = require('cookie-parser')
 const { login_limiter, register_limiter, two_fa_limiter } = require('./rate_limit')
 const bcrypt = require('bcrypt')
 const { send_verification_email } = require('./mailer')
+const { get_or_set_cache, delete_cache } = require('./redis')
 require('dotenv').config()
 
 // Prisma 
@@ -161,46 +162,50 @@ app.post('/register/verify_code', two_fa_limiter, async (req, res) => {
 // Get subscription of current user
 app.post('/subscription', token_auth, async (req, res) => {
 	const { filter_category, filter_status } = req.body
-	
 	if(typeof filter_status !== 'string') return res.status(400).json({ message: 'Invalid status.' })  
-	
 	const month_name = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
+	const cache_key = `subscriptions:${req.user.id}:${filter_category ?? 'none'}:${filter_status}`
 	try {
-		const subscriptions = await prisma.subscription.findMany({ 
-			where: { 
-				user_id: req.user.id,
-				category_id: filter_category === 0 ? null : (filter_category || undefined),
-				is_active: filter_status === 'all' ? undefined : filter_status === 'true' ? true : filter_status === 'false' ? false : undefined
-			},
-			include: { category: { select: { name: true, color_hex: true } } },
-			orderBy: { next_billing_date: 'asc' }
+		const result = await get_or_set_cache(cache_key, 120, async ()=> {
+			const subscriptions = await prisma.subscription.findMany({ 
+				where: { 
+					user_id: req.user.id,
+					category_id: filter_category === 0 ? null : (filter_category || undefined),
+					is_active: filter_status === 'all' ? undefined : filter_status === 'true' ? true : filter_status === 'false' ? false : undefined
+				},
+				include: { category: { select: { name: true, color_hex: true } } },
+				orderBy: { next_billing_date: 'asc' }
+			})
+			
+			const formatted_subs = subscriptions.map(sub => {
+				const bill_date = new Date(sub.next_billing_date)
+				switch(sub.duration){
+					case 'weekly': bill_date.setDate(bill_date.getDate() - 7); break
+					case 'monthly': bill_date.setMonth(bill_date.getMonth() - 1); break
+					case 'yearly': bill_date.setFullYear(bill_date.getFullYear() - 1); break
+				}
+
+				const prev_month = month_name[bill_date.getMonth()]
+				const prev_day = bill_date.getDate()
+				const prev_year = bill_date.getFullYear()
+				
+				return {
+					...sub,
+					amount: Number(sub.amount).toFixed(2),
+					prev_month,
+					prev_day,
+					prev_year,
+					month: month_name[sub.next_billing_date.getMonth()],
+					day: String(sub.next_billing_date.getDate()).padStart(2, '0'),
+					year: String(sub.next_billing_date.getFullYear())
+				}
+			})
+
+			return { formatted_subs }
 		})
 		
-		const formatted_subs = subscriptions.map(sub => {
-			const bill_date = new Date(sub.next_billing_date)
-			switch(sub.duration){
-				case 'weekly': bill_date.setDate(bill_date.getDate() - 7); break
-				case 'monthly': bill_date.setMonth(bill_date.getMonth() - 1); break
-				case 'yearly': bill_date.setFullYear(bill_date.getFullYear() - 1); break
-			}
-
-			const prev_month = month_name[bill_date.getMonth()]
-			const prev_day = bill_date.getDate()
-			const prev_year = bill_date.getFullYear()
-			
-			return {
-				...sub,
-				amount: Number(sub.amount).toFixed(2),
-				prev_month,
-				prev_day,
-				prev_year,
-				month: month_name[sub.next_billing_date.getMonth()],
-				day: String(sub.next_billing_date.getDate()).padStart(2, '0'),
-				year: String(sub.next_billing_date.getFullYear())
-			}
-		})
-		res.status(200).json({ subscriptions: formatted_subs, message: 'Subscriptions retrieved successfully.' })
+		res.status(200).json({ subscriptions: result.formatted_subs, message: 'Subscriptions retrieved successfully.' })
 	} catch (error) {
 		console.log(error)
 		res.status(500).json({ message: 'Error retrieving subscriptions.' })}
@@ -250,6 +255,18 @@ app.post('/add/subscription', token_auth, async (req, res) => {
 			currency: sub_currency,
 			duration: sub_duration
 		} })
+
+		// Delete cache because the data change
+		await delete_cache(`subscriptions:${req.user.id}:*`)
+		await delete_cache(`monthly_spends:${req.user.id}`)
+		await delete_cache(`total_active_subs:${req.user.id}`)
+		await delete_cache(`total_due_1_week:${req.user.id}:*`)
+		await delete_cache(`total_budget_left:${req.user.id}:*`)
+		await delete_cache(`renewals:${req.user.id}:*`)
+		await delete_cache(`category_spent:${req.user.id}:*`)
+		await delete_cache(`budget_summary:${req.user.id}:*`)
+		await delete_cache(`category_budget:${req.user.id}:*`)
+
 		res.status(201).json({ message: 'Subscription added successfully.' })
 	} catch (error) {
 		console.error(error)
@@ -288,9 +305,6 @@ app.put('/edit/subscription', token_auth, async (req, res) => {
 	const new_date_string = `${next_date.getFullYear()}-${String(next_date.getMonth() + 1).padStart(2, '0')}-${String(next_date.getDate()).padStart(2, '0')}T00:00:00.000Z`
 	
 	try {
-		const sub = await prisma.subscription.findFirst({ where: { name: new_sub_name, user_id: req.user.id } })
-		if(sub) return res.status(400).json({ message: 'Subscription already exist.' })
-
 		await prisma.subscription.update({ 
 			where: { id: sub_id, user_id: req.user.id }, 
 			data: {
@@ -301,7 +315,20 @@ app.put('/edit/subscription', token_auth, async (req, res) => {
 				currency: new_sub_currency,
 				is_active: new_sub_is_active,
 				duration: new_sub_duration
-			}})
+			}
+		})
+
+		// Delete cache because the data change
+		await delete_cache(`subscriptions:${req.user.id}:*`)
+		await delete_cache(`monthly_spends:${req.user.id}`)
+		await delete_cache(`total_active_subs:${req.user.id}`)
+		await delete_cache(`total_due_1_week:${req.user.id}:*`)
+		await delete_cache(`total_budget_left:${req.user.id}:*`)
+		await delete_cache(`renewals:${req.user.id}:*`)
+		await delete_cache(`category_spent:${req.user.id}:*`)
+		await delete_cache(`budget_summary:${req.user.id}:*`)
+		await delete_cache(`category_budget:${req.user.id}:*`)
+
 		res.status(200).json({ message: 'Subscription updated successfully.' })
 	} catch (error) {
 		console.error(error)
@@ -316,14 +343,29 @@ app.delete('/delete/subscription', token_auth, async (req, res) => {
 	
 	try {
 		await prisma.subscription.delete({ where: { id: subscription_id, user_id: req.user.id } })
+		
+		// Delete cache because the data change
+		await delete_cache(`subscriptions:${req.user.id}:*`)
+		await delete_cache(`monthly_spends:${req.user.id}`)
+		await delete_cache(`total_active_subs:${req.user.id}`)
+		await delete_cache(`total_due_1_week:${req.user.id}:*`)
+		await delete_cache(`total_budget_left:${req.user.id}:*`)
+		await delete_cache(`renewals:${req.user.id}:*`)
+		await delete_cache(`category_spent:${req.user.id}:*`)
+		await delete_cache(`budget_summary:${req.user.id}:*`)
+		await delete_cache(`category_budget:${req.user.id}:*`)
+
 		res.status(200).json({ message: 'Subscription deleted successfully.' })
 	} catch (error) {res.status(500).json({ message: 'Error deleting subscription.' })}
 })
 
 // Get categories of current user
 app.get('/category', token_auth, async (req, res) => {
+	const cache_key = `categories:${req.user.id}`
 	try {
-		const categories = await prisma.category.findMany({ where: { user_id: req.user.id } })
+		const categories = await get_or_set_cache(cache_key, 120, async ()=> {
+			return await prisma.category.findMany({ where: { user_id: req.user.id } })
+		})
 		res.status(200).json({ categories })
 	} catch (error) {res.status(500).json({ message: 'Error retrieving categories.' })}
 })
@@ -343,6 +385,13 @@ app.post('/add/category', token_auth, async (req, res) => {
 			color_hex: category_color,
 			user_id: req.user.id
 		} })
+
+		// Delete cache because the data change
+		await delete_cache(`categories:${req.user.id}`)
+		await delete_cache(`category_spent:${req.user.id}:*`)
+		await delete_cache(`category_summary:${req.user.id}`)
+		await delete_cache(`category_budget:${req.user.id}:*`)
+
 		res.status(201).json({ message: 'Category added successfully.' })
 	} catch (error) {res.status(500).json({ message: 'Error adding category.' })}
 })
@@ -363,6 +412,13 @@ app.put('/edit/category', token_auth, async (req, res) => {
 				color_hex: new_category_color
 			} 
 		})
+
+		// Delete cache because the data change
+		await delete_cache(`categories:${req.user.id}`)
+		await delete_cache(`category_spent:${req.user.id}:*`)
+		await delete_cache(`category_summary:${req.user.id}`)
+		await delete_cache(`category_budget:${req.user.id}:*`)
+
 		res.status(200).json({ message: 'Category updated successfully.' })
 	} catch (error) {res.status(500).json({ message: 'Error updating category.' })}
 })
@@ -374,14 +430,24 @@ app.delete('/delete/category', token_auth, async (req, res) => {
 
 	try {
 		await prisma.category.delete({ where: { id: category_id, user_id: req.user.id } })
+		
+		// Delete cache because the data change
+		await delete_cache(`categories:${req.user.id}`)
+		await delete_cache(`category_spent:${req.user.id}:*`)
+		await delete_cache(`category_summary:${req.user.id}`)
+		await delete_cache(`category_budget:${req.user.id}:*`)
+
 		res.status(200).json({ message: 'Category deleted successfully.' })
 	} catch (error) {res.status(500).json({ message: 'Error deleting category.' })}
 })
 
 // Get budget of current user
 app.get('/budget', token_auth, async (req, res) => {
+	const cache_key = `budgets:${req.user.id}`
 	try {
-		const budgets = await prisma.budget.findMany({ where: { user_id: req.user.id } })
+		const budgets = await get_or_set_cache(cache_key, 120, async ()=> {
+			return await prisma.budget.findMany({ where: { user_id: req.user.id } })
+		})
 		res.status(200).json({ budgets })
 	} catch (error) {res.status(500).json({ message: 'Error retrieving budgets.' })}
 })
@@ -405,6 +471,15 @@ app.post('/add/budget', token_auth, async (req, res) => {
 			user_id: req.user.id,
 			currency: toggle
 		} })
+
+		// Delete cache because the data change
+		await delete_cache(`budgets:${req.user.id}`)
+		await delete_cache(`total_budget:${req.user.id}`)
+		await delete_cache(`total_budget_left:${req.user.id}:*`)
+		await delete_cache(`category_spent:${req.user.id}:*`)
+		await delete_cache(`budget_summary:${req.user.id}:*`)
+		await delete_cache(`category_budget:${req.user.id}:*`)
+
 		res.status(201).json({ message: 'Budget added successfully.' })
 	} catch (error) {
 		console.error(error)
@@ -425,6 +500,15 @@ app.put('/edit/budget', token_auth, async (req, res) => {
 			where: { id: budget_id, month: input_month_index + 1, year: input_year, user_id: req.user.id },
 			data: { amount: new_budget_amount } 
 		})
+
+		// Delete cache because the data change
+		await delete_cache(`budgets:${req.user.id}`)
+		await delete_cache(`total_budget:${req.user.id}`)
+		await delete_cache(`total_budget_left:${req.user.id}:*`)
+		await delete_cache(`category_spent:${req.user.id}:*`)
+		await delete_cache(`budget_summary:${req.user.id}:*`)
+		await delete_cache(`category_budget:${req.user.id}:*`)
+
 		res.status(200).json({ message: 'Budget updated successfully.' })
 	} catch (error) {
 		console.error(error)
@@ -451,6 +535,15 @@ app.delete('/delete/budget', token_auth, async (req, res) => {
 				year: input_year
 			}
 		})
+
+		// Delete cache because the data change
+		await delete_cache(`budgets:${req.user.id}`)
+		await delete_cache(`total_budget:${req.user.id}`)
+		await delete_cache(`total_budget_left:${req.user.id}:*`)
+		await delete_cache(`category_spent:${req.user.id}:*`)
+		await delete_cache(`budget_summary:${req.user.id}:*`)
+		await delete_cache(`category_budget:${req.user.id}:*`)
+
 		res.status(200).json({ message: 'Budget deleted successfully.' })
 	} catch (error) {
 		console.error(error)
@@ -461,17 +554,15 @@ app.delete('/delete/budget', token_auth, async (req, res) => {
 // Get subscription history of current user
 app.post('/history', token_auth, async (req, res) => {
 	const { filter_category, filter_days } = req.body
-
-	if(typeof filter_days !== 'string') return res.status(400).json({ message: 'Invalid day.' })  
+	if (typeof filter_days !== 'string') return res.status(400).json({ message: 'Invalid day.' })
 
 	const month_name = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-   const today = new Date();
-   const today_year = today.getFullYear();
-   const month = String(today.getMonth() + 1).padStart(2, '0');
-   const month_start = new Date(`${today_year}-${month}-01T00:00:00.000Z`);
-   const year_start = new Date(`${today_year}-01-01T00:00:00.000Z`);
+	const today = new Date();
+	const today_year = today.getFullYear();
+	const month = String(today.getMonth() + 1).padStart(2, '0');
+	const month_start = new Date(`${today_year}-${month}-01T00:00:00.000Z`);
+	const year_start = new Date(`${today_year}-01-01T00:00:00.000Z`);
 
-	// Declare the where clause before query
 	const where_query = { user_id: req.user.id }
 	if (filter_category === 0) where_query.subscription = { category: null }
 	if (filter_category !== "" && filter_category !== undefined) where_query.subscription = { category: { id: filter_category } }
@@ -479,83 +570,94 @@ app.post('/history', token_auth, async (req, res) => {
 	if (filter_days === '30') {
 		const thirty_days_ago = new Date();
 		thirty_days_ago.setDate(thirty_days_ago.getDate() - 30);
-		
-		// Goes directly on where_query, doesn't touch subscription
-		where_query.billing_date = { gte: thirty_days_ago }; 
+		where_query.billing_date = { gte: thirty_days_ago };
 	} else if (filter_days === '90') {
 		const ninety_days_ago = new Date();
 		ninety_days_ago.setDate(ninety_days_ago.getDate() - 90);
-		
-		where_query.billing_date = { gte: ninety_days_ago }; 
+		where_query.billing_date = { gte: ninety_days_ago };
 	} else if (filter_days === 'year') {
-		// You already have year_start defined in your route!
-		where_query.billing_date = { gte: year_start }; 
+		where_query.billing_date = { gte: year_start };
 	}
 
-   try {
-      const histories = await prisma.paymentHistory.findMany({ 
-         where: where_query,
-         include: { subscription: {
-				include: { category: { select: { id: true, name: true, color_hex: true } } }
-			}},
-			orderBy: { billing_date: 'desc' }
-      })
+	const cache_key = `histories:${req.user.id}:${filter_category}:${filter_days}`
+	try {
+		const result = await get_or_set_cache(cache_key, 120, async () => {
+			const histories = await prisma.paymentHistory.findMany({
+				where: where_query,
+				include: {
+					subscription: {
+						include: { category: { select: { id: true, name: true, color_hex: true } } }
+					}
+				},
+				orderBy: { billing_date: 'desc' }
+			})
 
-      const month_amount = { php: 0, usd: 0 };
-      const year_amount = { php: 0, usd: 0 };
+			const month_amount = { php: 0, usd: 0 };
+			const year_amount = { php: 0, usd: 0 };
 
-      // Process all histories in a single pass
-      histories?.forEach(history => {
-         const billing_date = new Date(history.billing_date);
-         const currency = history.currency.toLowerCase()
-         // Only process history less than today
-         if (billing_date < today) {
-            const amount = Number(history.amount);
-            // Add to month total
-            if (billing_date >= month_start) month_amount[currency] += amount
-            // Add to year total
-            if (billing_date >= year_start) year_amount[currency] += amount
-         }
-      })
+			histories.forEach(history => {
+				const billing_date = new Date(history.billing_date);
+				const currency = history.currency.toLowerCase()
+				if (billing_date < today) {
+					const amount = Number(history.amount);
+					if (billing_date >= month_start) month_amount[currency] += amount
+					if (billing_date >= year_start) year_amount[currency] += amount
+				}
+			})
 
-		const formatted_histories = histories?.reduce((groups, history) => {
-			const billing_date = new Date(history.billing_date)
-			const group_key = `${month_name[billing_date.getMonth()]} ${billing_date.getFullYear()}`
-			const month_day = month_name[billing_date.getMonth()] + ' ' + String(billing_date.getDate()).padStart(2,'0')
-			
-			if(!groups[group_key]) groups[group_key] = []
-			groups[group_key].push({ ...history, month_day })
-			
-			return groups
-		}, {})
+			const groups = histories.reduce((acc, history) => {
+				const billing_date = new Date(history.billing_date)
+				const group_key = `${month_name[billing_date.getMonth()]} ${billing_date.getFullYear()}`
+				const month_day = month_name[billing_date.getMonth()] + ' ' + String(billing_date.getDate()).padStart(2, '0')
 
-      res.status(200).json({ formatted_histories, month_amount, year_amount });
-   } catch (error) {
-      console.error('Error retrieving history: ', error);
-      res.status(500).json({ message: 'Error retrieving subscription history.' });
-   }
+				if (!acc[group_key]) acc[group_key] = []
+				acc[group_key].push({ ...history, month_day })
+
+				return acc
+			}, {})
+
+			return { groups, month_amount, year_amount }
+		})
+
+		res.status(200).json({
+			formatted_histories: result.groups,
+			month_amount: result.month_amount,
+			year_amount: result.year_amount
+		});
+	} catch (error) {
+		console.error('Error retrieving history: ', error);
+		res.status(500).json({ message: 'Error retrieving subscription history.' });
+	}
 })
 
 // Get notifications of current user
 app.get('/notification', token_auth, async (req, res) => {
 	const month_name = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+	const cache_key = `notifications:${req.user.id}`
 	try {
-		const notifications = await prisma.notification.findMany({ 
-			where: { user_id: req.user.id },
-			include: { subscription: true },
-			orderBy: { notify_at: 'desc' }
+		const result = await get_or_set_cache(cache_key, 300, async ()=> {
+			const notifications = await prisma.notification.findMany({ 
+				where: { user_id: req.user.id },
+				include: { subscription: true },
+				orderBy: { notify_at: 'desc' }
+			})
+			const formatted_notifications = notifications.map(notif => ({
+				...notif, 
+				amount: Number(notif.subscription.amount).toFixed(2),
+				month: month_name[notif.subscription.next_billing_date.getMonth()],
+				day: String(notif.subscription.next_billing_date.getDate()).padStart(2, 0)
+			}))
+
+			let notif_count = 0
+			for(let notif of formatted_notifications) {if(notif.is_read === false) notif_count = notif_count + 1}
+		
+			return{ formatted_notifications, notif_count }
 		})
-		const formatted_notifications = notifications.map(notif => ({
-			...notif, 
-			amount: Number(notif.subscription.amount).toFixed(2),
-			month: month_name[notif.subscription.next_billing_date.getMonth()],
-			day: String(notif.subscription.next_billing_date.getDate()).padStart(2, 0)
-		}))
-
-		let notif_count = 0
-		for(let notif of formatted_notifications) {if(notif.is_read === false) notif_count = notif_count + 1}
-
-		res.status(200).json({ formatted_notifications, notif_count })
+		
+		res.status(200).json({ 
+			formatted_notifications: result.formatted_notifications, 
+			notif_count: result.notif_count 
+		})
 	} catch (error) {
 		console.error('Error retrieving notifications: ', error)
 		res.status(500).json({ message: 'Error retrieving notifications.' })
@@ -563,28 +665,31 @@ app.get('/notification', token_auth, async (req, res) => {
 })
 
 // Get notifications of current user today
-app.get('/notification/today', token_auth, async (req, res) => {
+app.get('/dashboard/notification/today', token_auth, async (req, res) => {
 	const month_name = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 	const today = new Date()
 	const today_start = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}T00:00:00.000Z`
 	const today_end = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate() + 1).padStart(2, '0')}T00:00:00.000Z`
+	
+	const cache_key = `notifications_today:${req.user.id}`
 	try {
-		const notifications = await prisma.notification.findMany({ 
-			where: { user_id: req.user.id, notify_at: { gte: today_start, lte: today_end }},
-			include: { subscription: true },
-			orderBy: { notify_at: 'desc' }
+		const result = await get_or_set_cache(cache_key, 300, async ()=> {
+			const notifications = await prisma.notification.findMany({ 
+				where: { user_id: req.user.id, notify_at: { gte: today_start, lte: today_end }},
+				include: { subscription: true },
+				orderBy: { notify_at: 'desc' }
+			})
+			const formatted_notifications = notifications.map(notif => ({
+				...notif, 
+				amount: Number(notif.subscription.amount).toFixed(2),
+				month: month_name[notif.subscription.next_billing_date.getMonth()],
+				day: String(notif.subscription.next_billing_date.getDate()).padStart(2, 0)
+			}))
+
+			return { formatted_notifications }
 		})
-		const formatted_notifications = notifications.map(notif => ({
-			...notif, 
-			amount: Number(notif.subscription.amount).toFixed(2),
-			month: month_name[notif.subscription.next_billing_date.getMonth()],
-			day: String(notif.subscription.next_billing_date.getDate()).padStart(2, 0)
-		}))
 
-		let notif_count = 0
-		for(let notif of formatted_notifications) {if(notif.is_read === false) notif_count = notif_count + 1}
-
-		res.status(200).json({ formatted_notifications, notif_count })
+		res.status(200).json({ formatted_notifications: result.formatted_notifications })
 	} catch (error) {
 		console.error('Error retrieving notifications: ', error)
 		res.status(500).json({ message: 'Error retrieving notifications.' })
@@ -598,6 +703,11 @@ app.put('/notification/mark_all_as_read', token_auth, async (req, res)=> {
 			where: { user_id: req.user.id, is_read: false },
 			data: { is_read: true }
 		})
+
+		// Delete cache because the data change
+		await delete_cache(`notifications_today:${req.user.id}`)
+		await delete_cache(`notifications:${req.user.id}`)
+
 		res.status(200).json({ message: 'Successfully marked all as read' })
 	} catch (error) {
 		console.log('Error marking all as read: ', error)
@@ -609,26 +719,36 @@ app.put('/notification/mark_all_as_read', token_auth, async (req, res)=> {
 app.delete('/delete/notification', token_auth, async (req, res) => {
 	const { notification_id } = req.body
 	if(typeof notification_id !== 'string' || notification_id.trim().length === 0) return res.status(400).json({ message: 'Invalid notification.' })  
-	
 	try {
 		await prisma.notification.delete({ where: { id: notification_id, user_id: req.user.id } })
+		
+		// Delete cache because the data change
+		await delete_cache(`notifications_today:${req.user.id}`)
+		await delete_cache(`notifications:${req.user.id}`)
+
 		res.status(200).json({ message: 'Notification deleted successfully.' })
 	} catch (error) {res.status(500).json({ message: 'Error deleting notification.' })}
 })
 
 // Get monthly spend
-app.get('/monthly_spend', token_auth, async (req, res) => {
+app.get('/dashboard/monthly_spend', token_auth, async (req, res) => {
+	const cache_key = `monthly_spends:${req.user.id}`
 	try {
-		const data = await prisma.subscription.groupBy({
-			where: {user_id: req.user.id},
-			by: ['currency'],
-			_sum: { amount: true } 
+		const result = await get_or_set_cache(cache_key, 120, async ()=> {
+			const data = await prisma.subscription.groupBy({
+				where: {user_id: req.user.id},
+				by: ['currency'],
+				_sum: { amount: true } 
+			})
+			const monthly_php = data.find(item => item.currency === 'PHP')
+			const monthly_usd = data.find(item => item.currency === 'USD')
+		
+			return { monthly_php, monthly_usd }
 		})
-		const monthly_php = data.find(item => item.currency === 'PHP')
-		const monthly_usd = data.find(item => item.currency === 'USD')
+		
 		res.status(200).json({ 
-			monthly_php: Number(monthly_php?._sum?.amount / 12 || 0).toFixed(2), 
-			monthly_usd: Number(monthly_usd?._sum?.amount / 12 || 0).toFixed(2), 
+			monthly_php: Number(result.monthly_php?._sum?.amount / 12 || 0).toFixed(2), 
+			monthly_usd: Number(result.monthly_usd?._sum?.amount / 12 || 0).toFixed(2), 
 			message: 'monthly_spend retrieved successfully.'
 		})
 	} catch (error) {
@@ -638,10 +758,15 @@ app.get('/monthly_spend', token_auth, async (req, res) => {
 })
 
 // Get active subscriptions
-app.get('/total/active_sub', token_auth, async (req, res) => {
+app.get('/dashboard/total/active_sub', token_auth, async (req, res) => {
+	const cache_key = `total_active_subs:${req.user.id}`
 	try {
-		const data = await prisma.subscription.findMany({ where: { is_active: true, user_id: req.user.id } })
-		res.status(200).json({ active_subs: data.length, message: 'Active subscriptions retrieved successfully.'})
+		const result = await get_or_set_cache(cache_key, 300, async ()=> {
+			const data = await prisma.subscription.findMany({ where: { is_active: true, user_id: req.user.id } })
+			return { data }
+		})
+
+		res.status(200).json({ active_subs: result.data.length, message: 'Active subscriptions retrieved successfully.'})
 	} catch (error) {
 		console.log('error: ', error)
 		res.status(500).json({ message: 'Error retrieving active subscriptions.' })
@@ -649,7 +774,7 @@ app.get('/total/active_sub', token_auth, async (req, res) => {
 })
 
 // Get total subs due in a week
-app.get('/total/due_1_week', token_auth, async (req, res) => {
+app.get('/dashboard/total/due_1_week', token_auth, async (req, res) => {
 	// Date today YYYY-MM-DD (Start of day)
 	const today = new Date()
 	const t_year = today.getFullYear()
@@ -664,11 +789,16 @@ app.get('/total/due_1_week', token_auth, async (req, res) => {
 	const nw_day = String(next_week.getDate()).padStart(2, '0')
 	const date_next_week = `${nw_year}-${nw_month}-${nw_day}T23:59:59.999Z`
 
+	const cache_key = `total_due_1_week:${req.user.id}:${date_today}:${date_next_week}`
 	try {
-		const data = await prisma.subscription.findMany({
-			where: { next_billing_date: { gte: date_today, lte: date_next_week}, user_id: req.user.id}
+		const result = await get_or_set_cache(cache_key, 300, async ()=> {
+			const data = await prisma.subscription.findMany({
+				where: { next_billing_date: { gte: date_today, lte: date_next_week}, user_id: req.user.id}
+			})
+			return { data }
 		})
-		res.status(200).json({ due_1_week: data.length, message: '1 week due subscriptions retrieved successfully.' })
+		
+		res.status(200).json({ due_1_week: result.data.length, message: '1 week due subscriptions retrieved successfully.' })
 	} catch (error) {
 		console.log('error: ', error)
 		res.status(500).json({ message: 'Error retrieving 1 week due subscriptions.' })
@@ -676,18 +806,24 @@ app.get('/total/due_1_week', token_auth, async (req, res) => {
 })
 
 // Get total budget
-app.get('/total/budget', token_auth, async (req, res) => {
+app.get('/dashboard/total/budget', token_auth, async (req, res) => {
+	const cache_key = `total_budget:${req.user.id}`
 	try {
-		const data = await prisma.budget.groupBy({
-			where: {user_id: req.user.id},
-			by: ['currency'],
-			_sum: { amount: true }
+		const result = await get_or_set_cache(cache_key, 300, async ()=> {
+			const data = await prisma.budget.groupBy({
+				where: {user_id: req.user.id},
+				by: ['currency'],
+				_sum: { amount: true }
+			})
+			const php = data.find(item => item.currency === 'PHP')
+			const usd = data.find(item => item.currency === 'USD')
+		
+			return { php, usd }
 		})
-		const php = data.find(item => item.currency === 'PHP')
-		const usd = data.find(item => item.currency === 'USD')
+		
 		res.status(200).json({
-			total_php: Number(php?._sum?.amount || 0).toFixed(2),
-			total_usd: Number(usd?._sum?.amount || 0).toFixed(2),
+			total_php: Number(result.php?._sum?.amount || 0).toFixed(2),
+			total_usd: Number(result.usd?._sum?.amount || 0).toFixed(2),
 			message: 'Total budget retrieved successfully.'
 		})
 	} catch (error) {
@@ -697,7 +833,7 @@ app.get('/total/budget', token_auth, async (req, res) => {
 })
 
 // Get budget left this month
-app.get('/total/budget_left', token_auth, async (req, res) => {
+app.get('/dashboard/total/budget_left', token_auth, async (req, res) => {
    // Start of month
    const today = new Date();
    const today_year = today.getFullYear();
@@ -709,50 +845,56 @@ app.get('/total/budget_left', token_auth, async (req, res) => {
    const last_day_date = new Date(today_year, today.getMonth() + 1, 0);
    const last_day = String(last_day_date.getDate()).padStart(2, '0');
    const end_of_month = `${today_year}-${month}-${last_day}T23:59:59.999Z`;
-   try {
-      // Get total amount of subscriptions this month (Spent)
-      const data = await prisma.subscription.groupBy({
-         where: { 
-            next_billing_date: { gte: start_of_month, lte: end_of_month }, 
-            user_id: req.user.id 
-         },
-         by: ['currency'],
-         _sum: { amount: true }
-      });
+   
+	const cache_key = `total_budget_left:${req.user.id}:${start_of_month}:${end_of_month}`
+	try {
+		const result = await get_or_set_cache(cache_key, 300, async ()=> {
+			// Get total amount of subscriptions this month (Spent)
+			const data = await prisma.subscription.groupBy({
+				where: { 
+					next_billing_date: { gte: start_of_month, lte: end_of_month }, 
+					user_id: req.user.id 
+				},
+				by: ['currency'],
+				_sum: { amount: true }
+			});
 
-      const php_sub = data.find(item => item.currency === 'PHP');
-      const usd_sub = data.find(item => item.currency === 'USD');
+			const php_sub = data.find(item => item.currency === 'PHP');
+			const usd_sub = data.find(item => item.currency === 'USD');
 
-      const php_spent = Number((php_sub?._sum?.amount || 0).toFixed(2));
-      const usd_spent = Number((usd_sub?._sum?.amount || 0).toFixed(2));
+			const php_spent = Number((php_sub?._sum?.amount || 0).toFixed(2));
+			const usd_spent = Number((usd_sub?._sum?.amount || 0).toFixed(2));
 
-      // Get total budget of this month
-      const budgets = await prisma.budget.groupBy({
-         where: { month: month_index, year: today_year, user_id: req.user.id},
-         by: ['currency'],
-         _sum: { amount: true }
-      });
+			// Get total budget of this month
+			const budgets = await prisma.budget.groupBy({
+				where: { month: month_index, year: today_year, user_id: req.user.id},
+				by: ['currency'],
+				_sum: { amount: true }
+			});
+			
+			const php_budget_obj = budgets.find(item => item.currency === 'PHP');
+			const usd_budget_obj = budgets.find(item => item.currency === 'USD');
+
+			// Extract the actual amounts into numbers! (This fixes the React error)
+			const php_budget = Number((php_budget_obj?._sum?.amount || 0).toFixed(2));
+			const usd_budget = Number((usd_budget_obj?._sum?.amount || 0).toFixed(2));
+
+			// 3. Subtract spent from budget
+			const php_left = Number((php_budget - php_spent).toFixed(2));
+			const usd_left = Number((usd_budget - usd_spent).toFixed(2));
+
+			const budget = {}
+			budget.php_budget = php_budget
+			budget.php_spent = php_spent
+			budget.php_left = php_left
+			budget.usd_budget = usd_budget
+			budget.usd_spent = usd_spent
+			budget.usd_left = usd_left
+		
+			return { budget }
+		})
       
-      const php_budget_obj = budgets.find(item => item.currency === 'PHP');
-      const usd_budget_obj = budgets.find(item => item.currency === 'USD');
-
-      // Extract the actual amounts into numbers! (This fixes the React error)
-      const php_budget = Number((php_budget_obj?._sum?.amount || 0).toFixed(2));
-      const usd_budget = Number((usd_budget_obj?._sum?.amount || 0).toFixed(2));
-
-      // 3. Subtract spent from budget
-      const php_left = Number((php_budget - php_spent).toFixed(2));
-      const usd_left = Number((usd_budget - usd_spent).toFixed(2));
-
-		const budget = {}
-		budget.php_budget = php_budget
-		budget.php_spent = php_spent
-		budget.php_left = php_left
-		budget.usd_budget = usd_budget
-		budget.usd_spent = usd_spent
-		budget.usd_left = usd_left
-
-      res.status(200).json({ budget, message: 'Remaining monthly budget calculated successfully.' });
+      res.status(200).json({ budget: result.budget, message: 'Remaining monthly budget calculated successfully.' });
    } catch (error) {
       console.log('error: ', error);
       res.status(500).json({ message: 'Error calculating monthly budget.' });
@@ -760,7 +902,7 @@ app.get('/total/budget_left', token_auth, async (req, res) => {
 });
 
 // Get upcoming renewals
-app.get('/renewals', token_auth, async (req, res) => {
+app.get('/dashboard/renewals', token_auth, async (req, res) => {
 	// Date today YYYY-MM-DD (Start of day)
 	const today = new Date()
 	const t_year = today.getFullYear()
@@ -776,21 +918,28 @@ app.get('/renewals', token_auth, async (req, res) => {
 	const date_next_3 = `${n3_year}-${n3_month}-${n3_day}T23:59:59.999Z`
 
 	const month_name = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+	
+	const cache_key = `renewals:${req.user.id}:${date_today}:${date_next_3}`
 	try {
-		const renewals = await prisma.subscription.findMany({
-			where: { 
-				next_billing_date: { gte: date_today, lte: date_next_3 }, 
-				user_id: req.user.id 
-			},
-			include: {category: {select: {color_hex: true } } }
+		const result = await get_or_set_cache(cache_key, 300, async ()=> {
+			const renewals = await prisma.subscription.findMany({
+				where: { 
+					next_billing_date: { gte: date_today, lte: date_next_3 }, 
+					user_id: req.user.id 
+				},
+				include: {category: {select: {color_hex: true } } }
+			})
+			const formatted_renewals = renewals.map(renewal => ({
+				...renewal, 
+				amount: Number(renewal.amount).toFixed(2),
+				month: month_name[renewal.next_billing_date.getMonth()],
+				day: String(renewal.next_billing_date.getDate()).padStart(2, 0)
+			}))
+		
+			return { formatted_renewals }
 		})
-		const formatted_renewals = renewals.map(renewal => ({
-			...renewal, 
-			amount: Number(renewal.amount).toFixed(2),
-			month: month_name[renewal.next_billing_date.getMonth()],
-			day: String(renewal.next_billing_date.getDate()).padStart(2, 0)
-		}))
-		res.status(200).json({formatted_renewals, message: 'Upcoming renewals retrieved successfully.'})
+
+		res.status(200).json({formatted_renewals: result.formatted_renewals, message: 'Upcoming renewals retrieved successfully.'})
 	} catch (error) {
       console.log('error: ', error)
       res.status(500).json({ message: 'Error fetching upcoming renewals.' })
@@ -798,56 +947,62 @@ app.get('/renewals', token_auth, async (req, res) => {
 })
 
 // Get active expenses by category
-app.post('/category_spent', token_auth, async (req, res) => {
+app.post('/dashboard/category_spent', token_auth, async (req, res) => {
    const { toggle } = req.body
 
    if (!toggle) return res.status(400).json({ message: 'Currency is required.' })
 	if(typeof toggle !== 'string' || toggle.trim().length === 0) return res.status(400).json({ message: 'Invalid currency.' })  
 
+	const cache_key = `category_spent:${req.user.id}:${toggle}`
    try {
-      // Get subscriptions spent (active only)
-      const grouped_spent = await prisma.subscription.groupBy({
-         by: ['category_id'],
-         where: {
-            currency: toggle,
-            user_id: req.user.id,
-            category_id: { not: null },
-            is_active: true
-         },
-         _sum: { amount: true }
-      })
-      // Get categories of spent
-      const category_ids = grouped_spent.map(spent => spent.category_id)
-      const categories = await prisma.category.findMany({
-         where: { id: { in: category_ids }, user_id: req.user.id },
-         select: { id: true, name: true, color_hex: true }
-      })
-      // Get budget of this month
-      const today = new Date()
-      const today_year = today.getFullYear()
-      const month_index = today.getMonth() + 1
-      const budgets = await prisma.budget.findMany({
-         where: {
-            currency: toggle,
-            month: month_index,
-            year: today_year,
-            user_id: req.user.id,
-            category_id: { in: category_ids }
-         }
-      })
-      // Combine
-      const spent_category = grouped_spent.map(group => {
-         const category_data = categories.find(c => c.id === group.category_id) || { name: 'Unknown', color_hex: '#ccc' }
-         const budget_match = budgets.find(b => b.category_id === group.category_id)
-         return {
-            category_id: group.category_id,
-            total_amount: Number(group._sum.amount || 0).toFixed(2),
-            category_name: category_data.name,
-            category_hex: category_data.color_hex,
-            category_budget: Number(budget_match?.amount || 0).toFixed(2)
-         }
-      })
-      res.status(200).json({ spent_category, message: 'Spent by category retrieved successfully.' })
+		const result = await get_or_set_cache(cache_key, 300, async ()=> {
+			// Get subscriptions spent (active only)
+			const grouped_spent = await prisma.subscription.groupBy({
+				by: ['category_id'],
+				where: {
+					currency: toggle,
+					user_id: req.user.id,
+					category_id: { not: null },
+					is_active: true
+				},
+				_sum: { amount: true }
+			})
+			// Get categories of spent
+			const category_ids = grouped_spent.map(spent => spent.category_id)
+			const categories = await prisma.category.findMany({
+				where: { id: { in: category_ids }, user_id: req.user.id },
+				select: { id: true, name: true, color_hex: true }
+			})
+			// Get budget of this month
+			const today = new Date()
+			const today_year = today.getFullYear()
+			const month_index = today.getMonth() + 1
+			const budgets = await prisma.budget.findMany({
+				where: {
+					currency: toggle,
+					month: month_index,
+					year: today_year,
+					user_id: req.user.id,
+					category_id: { in: category_ids }
+				}
+			})
+			// Combine
+			const spent_category = grouped_spent.map(group => {
+				const category_data = categories.find(c => c.id === group.category_id) || { name: 'Unknown', color_hex: '#ccc' }
+				const budget_match = budgets.find(b => b.category_id === group.category_id)
+				return {
+					category_id: group.category_id,
+					total_amount: Number(group._sum.amount || 0).toFixed(2),
+					category_name: category_data.name,
+					category_hex: category_data.color_hex,
+					category_budget: Number(budget_match?.amount || 0).toFixed(2)
+				}
+			})
+		
+			return { spent_category }
+		})
+      
+      res.status(200).json({ spent_category: result.spent_category, message: 'Spent by category retrieved successfully.' })
    } catch (error) {
       console.log('error: ', error)
       res.status(500).json({ message: 'Error fetching category spent.' })
@@ -855,32 +1010,38 @@ app.post('/category_spent', token_auth, async (req, res) => {
 })
 
 // Get categories with total count and amount of subs
-app.get('/category_summary', token_auth, async (req, res) => {
+app.get('/category/category_summary', token_auth, async (req, res) => {
+	const cache_key = `category_summary:${req.user.id}`
 	try {
-		const categories = await prisma.category.findMany({ 
-			where: { user_id: req.user.id },
-			include: { subscriptions: true }
-		})
-		const category_ids = categories.map(cat => cat.id)
-		const category_amount = await prisma.subscription.groupBy({
-			by: ['category_id', 'currency'],
-			where: { user_id: req.user.id, category_id: { in: category_ids } },
-			_sum: { amount: true }
-		})
-		const category_summary = categories.map(cat => {
-			const php_cat_amount = category_amount.find(cat_amount => cat_amount.category_id === cat.id && cat_amount.currency === 'PHP')
-			const usd_cat_amount = category_amount.find(cat_amount => cat_amount.category_id === cat.id && cat_amount.currency === 'USD')
-			return {
-				id: cat.id,
-				name: cat.name,
-				color_hex: cat.color_hex,
-				subs_count: cat.subscriptions.length,
-				php_sub_amount: Number(php_cat_amount?._sum?.amount || 0).toFixed(2),
-				usd_sub_amount: Number(usd_cat_amount?._sum?.amount || 0).toFixed(2),
+		const result = await get_or_set_cache(cache_key, 300, async ()=> {
+			const categories = await prisma.category.findMany({ 
+				where: { user_id: req.user.id },
+				include: { subscriptions: true }
+			})
+			const category_ids = categories.map(cat => cat.id)
+			const category_amount = await prisma.subscription.groupBy({
+				by: ['category_id', 'currency'],
+				where: { user_id: req.user.id, category_id: { in: category_ids } },
+				_sum: { amount: true }
+			})
+			const category_summary = categories.map(cat => {
+				const php_cat_amount = category_amount.find(cat_amount => cat_amount.category_id === cat.id && cat_amount.currency === 'PHP')
+				const usd_cat_amount = category_amount.find(cat_amount => cat_amount.category_id === cat.id && cat_amount.currency === 'USD')
+				return {
+					id: cat.id,
+					name: cat.name,
+					color_hex: cat.color_hex,
+					subs_count: cat.subscriptions.length,
+					php_sub_amount: Number(php_cat_amount?._sum?.amount || 0).toFixed(2),
+					usd_sub_amount: Number(usd_cat_amount?._sum?.amount || 0).toFixed(2),
 
-			}
+				}
+			})
+
+			return { category_summary }
 		})
-		res.status(200).json({ category_summary, message: 'Category summary retrieved successfully' })
+		
+		res.status(200).json({ category_summary: result.category_summary, message: 'Category summary retrieved successfully' })
 	} catch (error) {
       console.log('error: ', error)
       res.status(500).json({ message: 'Error fetching category summary.' })
@@ -888,9 +1049,8 @@ app.get('/category_summary', token_auth, async (req, res) => {
 })
 
 // Get total budget with expenses
-app.post('/budget_summary', token_auth, async (req, res)=> {
+app.post('/budget/budget_summary', token_auth, async (req, res)=> {
 	const { toggle, input_month_index, input_year } = req.body
-
 	if(typeof toggle !== 'string' || toggle.trim().length === 0) return res.status(400).json({ message: 'Invalid currency.' })  
 	if(typeof input_month_index !== 'number' || input_month_index.length === 0) return res.status(400).json({ message: 'Invalid month.' })  
 	if(typeof input_year !== 'number' || input_year.length === 0) return res.status(400).json({ message: 'Invalid year.' })  
@@ -904,19 +1064,27 @@ app.post('/budget_summary', token_auth, async (req, res)=> {
    const last_day = String(last_day_date.getDate()).padStart(2, '0');
    const end_of_month = `${input_year}-${current_month_str}-${last_day}T23:59:59.999Z`;
 
+	const cache_key = `budget_summary:${req.user.id}:${toggle}:${start_of_month}:${end_of_month}`
 	try {
-		const budget = await prisma.budget.aggregate({
-			where: { month: input_month_index + 1, year: input_year, currency: toggle, user_id: req.user.id },
-			_sum: { amount: true }
+		const result = await get_or_set_cache(cache_key, 300, async ()=> {
+			const budget = await prisma.budget.aggregate({
+				where: { month: input_month_index + 1, year: input_year, currency: toggle, user_id: req.user.id },
+				_sum: { amount: true }
+			})
+			console.log(budget._sum.amount)
+			const subs_total = await prisma.subscription.aggregate({
+				where: { currency: toggle, user_id: req.user.id, next_billing_date: { gte: start_of_month, lte: end_of_month } },
+				_sum: { amount: true }
+			})
+			console.log(subs_total._sum.amount)
+			const budget_summary = {}
+			budget_summary.budget = Number(budget._sum.amount || 0).toFixed(2)
+			budget_summary.subs_total = Number(subs_total._sum.amount || 0).toFixed(2)
+		
+			return { budget_summary }
 		})
-		const subs_total = await prisma.subscription.aggregate({
-			where: { currency: toggle, user_id: req.user.id, next_billing_date: { gte: start_of_month, lte: end_of_month } },
-			_sum: { amount: true }
-		})
-		const budget_summary = {}
-		budget_summary.budget = Number(budget._sum.amount || 0).toFixed(2)
-		budget_summary.subs_total = Number(subs_total._sum.amount || 0).toFixed(2)
-		res.status(200).json({ budget_summary, message: 'Budget summary retrieved successfully'})
+
+		res.status(200).json({ budget_summary: result.budget_summary, message: 'Budget summary retrieved successfully'})
 	} catch (error) {
       console.log('error: ', error)
       res.status(500).json({ message: 'Error fetching budget summary.' })
@@ -924,7 +1092,7 @@ app.post('/budget_summary', token_auth, async (req, res)=> {
 })
 
 // Get categories, budget, and subs amount based on month
-app.post('/category_budget', token_auth, async (req, res)=> {
+app.post('/budget/category_budget', token_auth, async (req, res)=> {
 	const { toggle, input_month_index, input_year } = req.body
 
 	if(typeof toggle !== 'string' || toggle.trim().length === 0) return res.status(400).json({ message: 'Invalid currency.' })  
@@ -940,36 +1108,42 @@ app.post('/category_budget', token_auth, async (req, res)=> {
    const last_day = String(last_day_date.getDate()).padStart(2, '0');
    const end_of_month = `${input_year}-${current_month_str}-${last_day}T23:59:59.999Z`;
 
+	const cache_key = `category_budget:${req.user.id}:${toggle}:${start_of_month}:${end_of_month}`
 	try {
-		const categories = await prisma.category.findMany({ where: { user_id: req.user.id } })
-		const budgets = await prisma.budget.groupBy({
-			by: ['id','category_id'],
-			where: { user_id: req.user.id, currency: toggle, month: input_month_index + 1, year: input_year },
-			_sum: { amount: true }
+		const result = await get_or_set_cache(cache_key, 300, async ()=> {
+			const categories = await prisma.category.findMany({ where: { user_id: req.user.id } })
+			const budgets = await prisma.budget.groupBy({
+				by: ['id','category_id'],
+				where: { user_id: req.user.id, currency: toggle, month: input_month_index + 1, year: input_year },
+				_sum: { amount: true }
+			})
+			const subscriptions = await prisma.subscription.groupBy({
+				by: ['category_id'],
+				where: { currency: toggle, user_id: req.user.id, next_billing_date: { gte: start_of_month, lte: end_of_month } },
+				_sum: { amount: true }
+			})
+			// Combine
+			const categories_budgets = categories.map(cat => {
+				const subscription_match = subscriptions.find(sub => sub.category_id === cat.id)
+				const budget_match = budgets.find(bud => bud.category_id === cat.id)
+				const budget_amount = Number(budget_match?._sum?.amount || 0).toFixed(2)
+				const subscription_amount = Number(subscription_match?._sum?.amount || 0).toFixed(2)
+				return {
+					id: cat.id,
+					budget_id: budget_match?.id || null,
+					name: cat.name,
+					color_hex: cat.color_hex,
+					budget: Number(budget_match?._sum?.amount || 0).toFixed(2),
+					amount: Number(subscription_match?._sum?.amount || 0).toFixed(2),
+					color_hex: cat.color_hex,
+					left: Number(budget_amount - subscription_amount < 0 ? 0 : budget_amount - subscription_amount).toFixed(2)
+				}
+			})
+		
+			return { categories_budgets }
 		})
-		const subscriptions = await prisma.subscription.groupBy({
-			by: ['category_id'],
-			where: { currency: toggle, user_id: req.user.id, next_billing_date: { gte: start_of_month, lte: end_of_month } },
-			_sum: { amount: true }
-		})
-		// Combine
-		const categories_budgets = categories.map(cat => {
-			const subscription_match = subscriptions.find(sub => sub.category_id === cat.id)
-			const budget_match = budgets.find(bud => bud.category_id === cat.id)
-			const budget_amount = Number(budget_match?._sum?.amount || 0).toFixed(2)
-			const subscription_amount = Number(subscription_match?._sum?.amount || 0).toFixed(2)
-			return {
-				id: cat.id,
-				budget_id: budget_match?.id || null,
-				name: cat.name,
-				color_hex: cat.color_hex,
-				budget: Number(budget_match?._sum?.amount || 0).toFixed(2),
-				amount: Number(subscription_match?._sum?.amount || 0).toFixed(2),
-				color_hex: cat.color_hex,
-				left: Number(budget_amount - subscription_amount < 0 ? 0 : budget_amount - subscription_amount).toFixed(2)
-			}
-		})
-		res.status(200).json({ categories_budgets, message: 'Categories budgets retrieved successfully' })
+
+		res.status(200).json({ categories_budgets: result.categories_budgets, message: 'Categories budgets retrieved successfully' })
 	} catch (error) {
       console.log('error: ', error)
       res.status(500).json({ message: 'Error fetching categories with budget.' })

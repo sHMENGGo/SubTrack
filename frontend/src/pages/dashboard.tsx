@@ -10,7 +10,7 @@ export default function Dashboard() {
    useEffect(()=> {
       const get_monthly_spend = async ()=> {
          try {
-            const data = await custom_fetch('monthly_spend')
+            const data = await custom_fetch('dashboard/monthly_spend')
             set_monthly_usd(data.monthly_usd)
             set_monthly_php(data.monthly_php)
          } catch (err: any) {
@@ -25,7 +25,7 @@ export default function Dashboard() {
    useEffect(()=> {
       const get_active_subs = async ()=> {
          try {
-            const data = await custom_fetch('total/active_sub')
+            const data = await custom_fetch('dashboard/total/active_sub')
             set_active_subs(data.active_subs)
          } catch (err: any) {
             toast.error(err.message)
@@ -39,7 +39,7 @@ export default function Dashboard() {
    useEffect(()=> {
       const get_due_1_week = async ()=> {
          try {
-            const data = await custom_fetch('total/due_1_week')
+            const data = await custom_fetch('dashboard/total/due_1_week')
             set_due_1_week(data.due_1_week)
          } catch (err: any) {
             toast.error(err.message)
@@ -54,7 +54,7 @@ export default function Dashboard() {
    useEffect(()=> {
       const get_budget = async ()=> {
          try {
-            const data = await custom_fetch('total/budget')
+            const data = await custom_fetch('dashboard/total/budget')
             set_usd_budget(data.total_usd)
             set_php_budget(data.total_php)
          } catch (err: any) {
@@ -69,7 +69,7 @@ export default function Dashboard() {
    useEffect(()=> {
       const get_renewals = async ()=> {
          try {
-            const data = await custom_fetch('renewals')
+            const data = await custom_fetch('dashboard/renewals')
             set_renewals(data.formatted_renewals)
          } catch (err: any) {
             toast.error(err.message)
@@ -84,7 +84,7 @@ export default function Dashboard() {
    useEffect(()=> {
       const get_category_spent = async ()=> {
          try {
-            const data = await custom_fetch('category_spent', {
+            const data = await custom_fetch('dashboard/category_spent', {
                method: 'POST', 
                body: JSON.stringify({ toggle })
             })
@@ -101,7 +101,7 @@ export default function Dashboard() {
    useEffect(()=> {
       const get_notifications = async ()=> {
          try {
-            const data = await custom_fetch('notification/today')
+            const data = await custom_fetch('dashboard/notification/today')
             set_notifications(data.formatted_notifications)
          } catch (err: any) {
             toast.error(err.message)
@@ -115,7 +115,7 @@ export default function Dashboard() {
    useEffect(()=> {
       const get_budget_left = async ()=> {
          try {
-            const data = await custom_fetch('total/budget_left')
+            const data = await custom_fetch('dashboard/total/budget_left')
             set_budget(data.budget)
          } catch (err: any) {
             toast.error(err.message)

@@ -124,3 +124,4 @@ A personal subscription tracker web app for monitoring recurring payments. SubTr
 
    - **Aug 16:** Developed MFA using gmail, password hashing, server input validation, and API rate limiter. Fixed duplications of subscriptions and categories.
    
+   - **Aug 17:** Setup upstash redis.

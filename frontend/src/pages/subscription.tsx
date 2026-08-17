@@ -49,6 +49,7 @@ export default function Subscription() {
    )
 
    // Add subscription
+   const [loading, set_loading] = useState<boolean>(false)
    const [show_add_sub, set_show_add_sub] = useState<boolean>(false)
    const [sub_name, set_sub_name] = useState<string>("")
    const [sub_amount, set_sub_amount] = useState<number>()
@@ -64,6 +65,7 @@ export default function Subscription() {
    const [sub_category_id, set_sub_category_id] = useState<number | string>("")
    const [sub_duration, set_sub_duration] = useState<string>('monthly')
    const add_sub = async (e : any) => {
+      set_loading(true)
       e.preventDefault()
       try {
          const data = await custom_fetch('add/subscription', {
@@ -85,7 +87,7 @@ export default function Subscription() {
       } catch (err: any) {
          toast.error(err.message)
          console.error("Error adding subscription:", err)
-      }
+      } finally { set_loading(false) }
    }
 
    // Edit subscription
@@ -114,6 +116,7 @@ export default function Subscription() {
       set_show_edit_sub(true)
    }
    const edit_sub = async (e: any) => {
+      set_loading(true)
       e.preventDefault()
       try {
          const data = await custom_fetch('edit/subscription', {
@@ -136,7 +139,7 @@ export default function Subscription() {
       } catch (err: any) {
          toast.error(err.message)
          console.error("Error editing subscription:", err)
-      }
+      } finally { set_loading(false) }
    }
 
    // Delete subscription
@@ -149,6 +152,7 @@ export default function Subscription() {
       set_show_delete_sub(true)
    }
    const delete_sub = async (e: any) => {
+      set_loading(true)
       e.preventDefault()
       try {
          const data = await custom_fetch('delete/subscription', {
@@ -162,7 +166,7 @@ export default function Subscription() {
       } catch (err: any) {
          toast.error(err.message)
          console.error("Error deleting subscription:", err)
-      }
+      } finally { set_loading(false) }
    }
 
    return (
@@ -244,7 +248,7 @@ export default function Subscription() {
                            <option value={'yearly'}>Yearly</option>
                      </select>
                   </div>
-                  <button type="submit"  className="px-4 py-2.5 outline-none active:bg-blue-700 mt-4 rounded-lg bg-blue-900 text-(--text-primary) hover:bg-blue-800 transition-colors" >Add Subscription</button>
+                  <button type="submit" disabled={loading}  className="px-4 py-2.5 outline-none active:bg-blue-700 mt-4 rounded-lg bg-blue-900 text-(--text-primary) hover:bg-blue-800 transition-colors" >{loading ? 'Adding Subscription...' : 'Add Subscription'}</button>
                </form>
             </section>
          )}    
@@ -293,7 +297,7 @@ export default function Subscription() {
                            <option value={'yearly'}>Yearly</option>
                      </select>
                   </div>
-                  <button type="submit"  className="px-4 py-2.5 outline-none active:bg-blue-700 mt-4 rounded-lg bg-blue-900 text-(--text-primary) hover:bg-blue-800 transition-colors" >Save changes</button>
+                  <button type="submit" disabled={loading}  className="px-4 py-2.5 outline-none active:bg-blue-700 mt-4 rounded-lg bg-blue-900 text-(--text-primary) hover:bg-blue-800 transition-colors" >{loading ? 'Saving Changes...' : 'Save Changes'}</button>
                </form>
             </section>
          )}
@@ -304,7 +308,7 @@ export default function Subscription() {
                <div onClick={(e)=> {e.stopPropagation(); e.preventDefault()}}  className="w-full max-w-md bg-(--surface-1) rounded-xl p-8 gap-2 flex flex-col" >
                   <h1 className="text-xl font-bold text-center" >Are you sure you want to delete {sub_to_delete_name} subscription?</h1>
                   <div className="flex gap-4 mt-4 justify-center" >
-                     <button onClick={(e)=> delete_sub(e)}  className="px-4 py-2.5 outline-none active:bg-red-700 rounded-lg bg-red-900 text-(--text-primary) hover:bg-red-800 transition-colors" >Delete</button>
+                     <button onClick={(e)=> delete_sub(e)} disabled={loading}  className="px-4 py-2.5 outline-none active:bg-red-700 rounded-lg bg-red-900 text-(--text-primary) hover:bg-red-800 transition-colors" >{loading ? 'Deleting...' : 'Delete'}</button>
                      <button onClick={()=> set_show_delete_sub(false)}  className="px-4 py-2.5 outline-none active:bg-blue-700 rounded-lg bg-blue-900 text-(--text-primary) hover:bg-blue-800 transition-colors" >Cancel</button>
                   </div>
                </div>
