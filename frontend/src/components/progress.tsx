@@ -27,14 +27,14 @@ export default function Progress({
    const bar_width = (current / safe_max) * 100;
    return (
       <main key={id} className="w-full">
-         <section className="flex justify-between items-center">
-            <div className="flex justify-between w-1/2 items-center" >
-               <h1 style={{ color: page === 'budget' ? color : 'var(--text-primary)' }}  className={` ${page === 'budget' ? 'text-3xl' : ''}`} >{name}</h1>
-               {page === 'budget' && <h2>{symbol} {current} of {symbol} {max}</h2>}
+         <section className="flex justify-between items-end">
+            <div className={`flex ${page === 'budget' && window.innerWidth < 768 ? 'flex-col text-nowrap items-start' : ''} justify-between w-1/2 items-center`} >
+               <h1 style={{ color: page === 'budget' ? color : 'var(--text-primary)' }}  className={` ${page === 'budget' ? 'text-lg' : 'text-sm'} truncate`} >{name}</h1>
+               {page === 'budget' && <h2 className="text-xs" >{symbol} {current} of {symbol} {max}</h2>}
             </div>
-            {page === 'dashboard_category' && <h2>{symbol} {current} of {symbol} {max}</h2>}
-            {page === 'dashboard_budget' && <h2>{symbol} {current} of {symbol} {max}</h2>}
-            {page === 'budget' && <h2>{symbol} {left} left</h2>}
+            {page === 'dashboard_category' && <h2 className="text-xs text-nowrap md:text-wrap" >{symbol} {current} of {symbol} {max}</h2>}
+            {page === 'dashboard_budget' && <h2 className="text-sm" >{symbol} {current} of {symbol} {max}</h2>}
+            {page === 'budget' && <h2 className="text-xs" >{symbol} {left} left</h2>}
          </section>
          {/* Progress */}
          <div className="w-full h-2 bg-(--surface-1) rounded-full relative">

@@ -6,7 +6,7 @@ const jwt = require('jsonwebtoken')
 const cookie_parser = require('cookie-parser')
 const { login_limiter, register_limiter, two_fa_limiter } = require('./rate_limit')
 const bcrypt = require('bcrypt')
-const { send_verification_email } = require('./mailer')
+const { send_forgot_verification_email, send_register_verification_email } = require('./mailer')
 const { get_or_set_cache, delete_cache } = require('./redis')
 require('dotenv').config()
 
@@ -123,8 +123,8 @@ app.post('/register/send_code', register_limiter, async (req, res) => {
          sameSite: 'lax',
 			// secure: true
       })
+		await send_register_verification_email(reg_email, code)
 
-		await send_verification_email(reg_email, code)
       res.json({ message: 'Verification code sent.' })
    } catch (err) {
       console.error(err)
@@ -151,11 +151,81 @@ app.post('/register/verify_code', two_fa_limiter, async (req, res) => {
         	name: reg_name, 
         	password: password_hash, 
         	email: reg_email}})
-		}
+		} else { res.status(400).json({ message: 'Invalid code.' }) }
       res.status(201).json({ message: 'Account registered successfully.' })
    } catch (error) {
 		console.log(error)
 		res.status(500).json({ message: 'Error registering user.' })
+	}
+})
+
+// Forgot password, send code
+app.post('/forgot/send_code', register_limiter, async (req, res) => {
+	const { email } = req.body
+
+	if(!email) return res.status(400).json({ message: 'Email is required.' })
+	if(typeof email !== 'string' || email.trim().length === 0) return res.status(400).json({ message: 'Invalid email.' })  
+
+	try {
+		const user = await prisma.user.findFirst({ where: { email: email } })
+		if(!user) return res.status(400).json({ message: 'This email is not registered.' })  
+		const email_db = user.email
+      
+		const code = Math.floor(100000 + Math.random() * 900000).toString() // 6 digits
+		const verification_token_forgot = jwt.sign({ email_db, code }, process.env.JWT_SECRET, { expiresIn: '10m' })
+		
+		res.cookie('verification_token_forgot', verification_token_forgot, {
+         httpOnly: true,
+         maxAge: 10 * 60 * 1000, // 10 min
+         sameSite: 'lax',
+			// secure: true
+      })
+		await send_forgot_verification_email(email_db, code)
+
+      res.json({ email: email_db, message: 'Verification code sent.' })
+   } catch (err) {
+      console.error(err)
+      res.status(500).json({ message: 'Failed to send verification code.' })
+   }
+})
+// Forgot password, verify code
+app.post('/forgot/verify_code', two_fa_limiter, async (req, res) => {
+   const { forgot_code } = req.body
+
+	const verification_token_forgot = req.cookies.verification_token_forgot
+	if(!verification_token_forgot) return res.status(400).json({ message: 'No token sent.' })
+
+   try {
+		const decoded = jwt.verify(verification_token_forgot, process.env.JWT_SECRET)
+		if(decoded.code !== forgot_code){ res.status(400).json({ message: 'Invalid code.' }) }
+      res.status(200).json({ message: 'Verification success.' })
+   } catch (error) {
+		console.log(error)
+		res.status(500).json({ message: 'Error verifying code.' })
+	}
+})
+// Change password after authentication of forgot password
+app.put('/forgot/change_password', two_fa_limiter, async (req, res) => {
+   const { new_password } = req.body
+
+	if(!new_password) return res.status(400).json({ message: 'Input password.' })
+	if(typeof new_password !== 'string') return res.status(400).json({ message: 'Invalid password.' })
+
+	const verification_token_forgot = req.cookies.verification_token_forgot
+	if(!verification_token_forgot) return res.status(400).json({ message: 'No token sent.' })
+
+   try {
+		const new_password_hash = await bcrypt.hash(new_password, 11)
+		const decoded = jwt.verify(verification_token_forgot, process.env.JWT_SECRET)
+		await prisma.user.update({
+			where: { email: decoded.email_db },
+			data: { password: new_password_hash }
+		})
+
+      res.status(200).json({ message: 'Password changed successfully.' })
+   } catch (error) {
+		console.log(error)
+		res.status(500).json({ message: 'Error changing password.' })
 	}
 })
 
@@ -1071,12 +1141,10 @@ app.post('/budget/budget_summary', token_auth, async (req, res)=> {
 				where: { month: input_month_index + 1, year: input_year, currency: toggle, user_id: req.user.id },
 				_sum: { amount: true }
 			})
-			console.log(budget._sum.amount)
 			const subs_total = await prisma.subscription.aggregate({
 				where: { currency: toggle, user_id: req.user.id, next_billing_date: { gte: start_of_month, lte: end_of_month } },
 				_sum: { amount: true }
 			})
-			console.log(subs_total._sum.amount)
 			const budget_summary = {}
 			budget_summary.budget = Number(budget._sum.amount || 0).toFixed(2)
 			budget_summary.subs_total = Number(subs_total._sum.amount || 0).toFixed(2)

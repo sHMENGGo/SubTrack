@@ -11,7 +11,7 @@ import Toaster from "./components/toaster"
 
 function App() {
   	return (	
-		<main className="w-full min-h-screen bg-(--page-bg) overflow-y-auto overflow-x-hidden">
+		<main className="w-full min-h-screen bg-(--page-bg) overflow-y-auto overflow-x-hidden md:text-shift-up lg:text-shift-up2 ">
 			<BrowserRouter>
 				<Routes>
 					<Route path="/" element={<Login />} />

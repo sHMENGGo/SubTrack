@@ -150,39 +150,39 @@ export default function Budget() {
       <main className="flex flex-col gap-4 w-full h-full justify-center py-4 " >
          <section className="flex flex-col w-full items-center gap-4 " >
             {/* month navigation */}
-            <div className="flex gap-4 text-xl" >
+            <div className="flex gap-2 md:gap-4 text-lg" >
                <FontAwesomeIcon icon={faChevronLeft} onClick={prev_month} className="text-(--text-primary) hover:text-(--text-secondary) cursor-pointer active:text-(--text-primary) " />
                <h1>{month_name[input_month_index]} {input_year}</h1>
                <FontAwesomeIcon icon={faChevronRight} onClick={next_month} className="text-(--text-primary) hover:text-(--text-secondary) cursor-pointer active:text-(--text-primary) " />
             </div>
             {/* Total spent of budget */}
             <div className="flex flex-col items-center gap-2 w-1/3" >
-               <h2>Total Spent of Budget</h2>
+               <h2 className="text-sm text-nowrap" >Total Spent of Budget</h2>
                {/* Toggle PHP or USD */}
                <div onClick={()=> set_toggle(toggle === 'PHP' ? 'USD' : 'PHP')}  className="p-1 px-3 gap-6 rounded-full bg-(--surface-1) flex items-center justify-around relative cursor-pointer" >
                   <div className={` ${toggle === 'PHP' ? 'left-[1%]' : 'left-[48%]'} bg-blue-900 w-1/2 h-9/10 absolute rounded-full transition-all`} ></div>
-                  <h1 className="z-10" >PHP</h1>
-                  <h1 className="z-10" >USD</h1>
+                  <h1 className="z-10 text-sm" >PHP</h1>
+                  <h1 className="z-10 text-sm" >USD</h1>
                </div>
-               <div className="flex items-end" >
-                  <h1 className="flex text-4xl items-end" >{toggle === 'PHP' ? '₱' : '$'} {budget_summary.subs_total} </h1>
-                  <h2 className="text-lg ml-1" >of {toggle === 'PHP' ? '₱' : '$'} {budget_summary.budget}</h2>
+               <div className="flex items-end text-nowrap" >
+                  <h1 className="text-xl" >{toggle === 'PHP' ? '₱' : '$'} {budget_summary.subs_total} </h1>
+                  <h2 className="text-md ml-1" >of {toggle === 'PHP' ? '₱' : '$'} {budget_summary.budget}</h2>
                </div>
                <Progress current={budget_summary.subs_total} max={budget_summary.budget} />
             </div>
          </section>
          {/* Budget details */}
-         <section className="flex flex-col gap-8 p-4" >
+         <section className="flex flex-col gap-8 p-2 md:p-4" >
             {categories_budgets.length !== 0 ? categories_budgets.map(cat_bud => (
-               <div key={cat_bud.id}  className="flex items-center gap-4" >
+               <div key={cat_bud.id}  className="flex items-center gap-2 md:gap-4" >
                <Progress page="budget" color={cat_bud.color_hex} name={cat_bud.name} current={cat_bud.amount} max={cat_bud.budget} left={cat_bud.left} symbol={toggle === 'PHP' ? '₱' : '$'} />
                {cat_bud.budget !== "0.00" ? (
-                  <div className="flex gap-4" >
-                     <FontAwesomeIcon icon={faPenToSquare} onClick={()=> open_edit(cat_bud)}  className=" text-3xl cursor-pointer text-blue-800 hover:text-blue-700 " />
-                     <FontAwesomeIcon icon={faTrash} onClick={()=> open_delete_confirmation(cat_bud)}  className=" text-3xl cursor-pointer text-red-800 hover:text-red-700 " />
+                  <div className="flex gap-2 md:gap-4" >
+                     <FontAwesomeIcon icon={faPenToSquare} onClick={()=> open_edit(cat_bud)}  className=" text-xl cursor-pointer text-(--fill-accent) hover:text-blue-400 active:text-(--fill-accent) " />
+                     <FontAwesomeIcon icon={faTrash} onClick={()=> open_delete_confirmation(cat_bud)}  className=" text-xl cursor-pointer text-(--fill-danger) active:text-(--fill-danger) hover:text-red-500 " />
                   </div>
                ) : (
-                  <button onClick={()=> open_add_budget(cat_bud)}  className="px-4 py-2.5 text-nowrap  rounded-lg bg-blue-900 text-(--text-primary) hover:bg-blue-800 transition-colors" >Set Budget</button>
+                  <button onClick={()=> open_add_budget(cat_bud)}  className="p-2 md:px-4 py-2 md:py-2.5 text-nowrap  rounded-lg bg-blue-900 text-(--text-primary) hover:bg-blue-800 transition-colors text-sm" >Set Budget</button>
                )}
                </div>
             )) : (
@@ -194,8 +194,8 @@ export default function Budget() {
          {show_add_budget && (
             <section onClick={()=> set_show_add_budget(false)}  className=" top-0 left-0 w-full h-full absolute bg-black/50 flex justify-center items-center" >
                <form onSubmit={(e)=> add_budget(e)} onClick={(e)=> e.stopPropagation()} className="w-full max-w-md bg-(--surface-1) rounded-xl p-8 gap-2 flex flex-col" >
-                  <input type="number" autoFocus value={budget_amount} onChange={(e) => {let val = Number(e.target.value); if(val > 99999999) val = 99999999; set_budget_amount(val)}}  placeholder="Amount" required  className="px-4 py-2.5 rounded-lg w-full" />
-                  <button type="submit" disabled={loading}  className="px-4 py-2.5 outline-none active:bg-blue-700 mt-4 rounded-lg bg-blue-900 text-(--text-primary) hover:bg-blue-800 transition-colors" >{loading ? 'Adding Budget...' : 'Add Budget'}</button>
+                  <input type="number" autoFocus value={budget_amount} onChange={(e) => {let val = Number(e.target.value); if(val > 99999999) val = 99999999; set_budget_amount(val)}}  placeholder="Amount" required  className="px-4 py-2.5 rounded-lg w-full text-sm" />
+                  <button type="submit" disabled={loading}  className="px-4 py-2.5 outline-none active:bg-blue-700 mt-4 rounded-lg bg-blue-900 text-(--text-primary) hover:bg-blue-800 transition-colors text-sm" >{loading ? 'Adding Budget...' : 'Add Budget'}</button>
                </form>
             </section>
          )}
@@ -204,8 +204,8 @@ export default function Budget() {
          {show_edit_budget && (
             <section onClick={()=> set_show_edit_budget(false)}  className=" top-0 left-0 w-full h-full absolute bg-black/50 flex justify-center items-center" >
                <form onClick={(e)=> e.stopPropagation()} className="w-full max-w-md bg-(--surface-1) rounded-xl p-8 gap-2 flex flex-col" >
-                  <input type="number" autoFocus value={new_budget_amount} onChange={(e) => {let val = Number(e.target.value); if(val > 99999999) val = 99999999 ;set_new_budget_amount(val)}}  placeholder="Amount" required  className="px-4 py-2.5 rounded-lg w-full" />
-                  <button onClick={(e)=> edit_budget(e)} disabled={loading}  className="px-4 py-2.5 outline-none active:bg-blue-700 mt-4 rounded-lg bg-blue-900 text-(--text-primary) hover:bg-blue-800 transition-colors" >{loading ? 'Saving Changes...' : 'Save Changes'}</button>
+                  <input type="number" autoFocus value={new_budget_amount} onChange={(e) => {let val = Number(e.target.value); if(val > 99999999) val = 99999999 ;set_new_budget_amount(val)}}  placeholder="Amount" required  className="px-4 py-2.5 rounded-lg w-full text-sm" />
+                  <button onClick={(e)=> edit_budget(e)} disabled={loading}  className="px-4 py-2.5 outline-none active:bg-blue-700 mt-4 rounded-lg bg-blue-900 text-(--text-primary) hover:bg-blue-800 transition-colors text-sm" >{loading ? 'Saving Changes...' : 'Save Changes'}</button>
                </form>
             </section>
          )}
@@ -214,10 +214,10 @@ export default function Budget() {
          {show_delete_budget && (
             <section onClick={()=> set_show_delete_budget(false)}  className=" top-0 left-0 w-full h-full absolute bg-black/50 flex justify-center items-center" >
                <div onClick={(e)=> {e.stopPropagation(); e.preventDefault()}}  className="w-full max-w-md bg-(--surface-1) rounded-xl p-8 gap-2 flex flex-col" >
-                  <h1 className="text-xl font-bold text-center" >Are you sure you want to delete {budget_to_delete_name} budget for this month?</h1>
-                  <div className="flex gap-4 mt-4 justify-center" >
-                     <button onClick={(e)=> delete_budget(e)} disabled={loading}  className="px-4 py-2.5 outline-none active:bg-red-700 rounded-lg bg-red-900 text-(--text-primary) hover:bg-red-800 transition-colors" >{loading ? 'Deleting...' : 'Delete'}</button>
-                     <button onClick={()=> set_show_delete_budget(false)}  className="px-4 py-2.5 outline-none active:bg-blue-700 rounded-lg bg-blue-900 text-(--text-primary) hover:bg-blue-800 transition-colors" >Cancel</button>
+                  <h1 className="text-sm font-bold text-center" >Are you sure you want to delete {budget_to_delete_name} budget for this month?</h1>
+                  <div className="flex gap-4 mt-4 justify-center transition-colors text-sm" >
+                     <button onClick={(e)=> delete_budget(e)} disabled={loading}  className="px-4 py-2.5 outline-none rounded-lg active:bg-red-700 bg-red-900 text-(--text-primary) hover:bg-red-800" >{loading ? 'Deleting...' : 'Delete'}</button>
+                     <button onClick={()=> set_show_delete_budget(false)}  className="px-4 py-2.5 outline-none active:bg-blue-700 rounded-lg bg-blue-900 text-(--text-primary) hover:bg-blue-800 " >Cancel</button>
                   </div>
                </div>
             </section>

@@ -46,3 +46,30 @@ select option {
    cursor: pointer;
 }
 
+@utility text-shift-up {
+  & .text-xs { @apply text-sm; }
+  & .text-sm { @apply text-base; }
+  & .text-base { @apply text-lg; }
+  & .text-lg { @apply text-xl; }
+  & .text-xl { @apply text-2xl; }
+  & .text-2xl { @apply text-3xl; }
+  & .text-3xl { @apply text-4xl; }
+  & .text-4xl { @apply text-5xl; }
+  & .text-5xl { @apply text-6xl; }
+  & .text-6xl { @apply text-7xl; }
+}
+
+@utility text-shift-up2 {
+  & .text-xs { @apply text-base; }
+  & .text-sm { @apply text-lg; }
+  & .text-base { @apply text-xl; }
+  & .text-lg { @apply text-2xl; }
+  & .text-xl { @apply text-3xl; }
+  & .text-2xl { @apply text-4xl; }
+  & .text-3xl { @apply text-5xl; }
+  & .text-4xl { @apply text-6xl; }
+  & .text-5xl { @apply text-7xl; }
+  & .text-6xl { @apply text-8xl; }
+}
+
+

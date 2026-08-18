@@ -172,61 +172,63 @@ export default function Subscription() {
    return (
       <main className="flex flex-col gap-4 w-full h-full overflow-x-hidden overflow-y-auto" >
          {/* Navigation */}
-         <section className="flex gap-4 w-full" >
-            <input type="text" value={search_term} onChange={(e) => set_search_term(e.target.value)} placeholder="Search subscription..." className="px-4 w-1/3 py-2.5 rounded-lg" />
-            <select value={filter_category} onChange={(e) => set_filter_category(e.target.value === "" ? "" : Number(e.target.value))} className="px-2 py-2.5 rounded-lg " >
+         <section className="flex flex-col md:flex-row gap-4 w-full" >
+            <input type="text" value={search_term} onChange={(e) => set_search_term(e.target.value)} placeholder="Search subscription..." className="px-4 w-full md:w-1/3 py-2.5 rounded-lg" />
+            <select value={filter_category} onChange={(e) => set_filter_category(e.target.value === "" ? "" : Number(e.target.value))} className="px-2 py-2.5 rounded-lg text-sm " >
                <option  value="" >Category: All</option>
                {categories.map((category) => (
                   <option key={category.id} value={category.id}>{category.name}</option>
                ))}
                <option value={0}>None</option>
             </select>
-            <select value={filter_status} onChange={(e) => set_filter_status(e.target.value)}  className="px-2 py-2.5 rounded-lg" >
+            <select value={filter_status} onChange={(e) => set_filter_status(e.target.value)}  className="px-2 py-2.5 rounded-lg text-sm" >
                <option value="all">Status: All</option>
                <option value="true">Active</option>
                <option value="false">Inactive</option>
             </select>
-            <button className="px-4 py-2.5 rounded-lg bg-blue-900 text-(--text-primary) hover:bg-blue-800 transition-colors" onClick={() => set_show_add_sub(true)} >+ Add Subscription</button>
+            <button className="px-4 py-2.5 text-sm rounded-lg bg-blue-900 text-(--text-primary) hover:bg-blue-800 transition-colors" onClick={() => set_show_add_sub(true)} >+ Add Subscription</button>
          </section>
 
          {/* Subscription List */}
-         <section className="flex flex-col gap-4 w-full h-full " >
+         <section className="flex flex-col gap-2 md:gap-4 w-full h-full " >
             {filtered_subscriptions?.length > 0 ? (
                filtered_subscriptions.map((subscription) => (
-                  <div key={subscription.id}  className="grid grid-cols-9 grid-rows-1 items-center px-4 py-2.5 border-b border-(--border)  " >
-                     <h1 className="text-xl col-span-3 place-self-start w-full truncate " >{subscription.name}</h1>
-                        <h2 style={{ backgroundColor: subscription.category?.color_hex || 'var(--border)' }}  className=" px-2 rounded-full w-fit place-self-center " >{subscription.category?.name || 'Uncategorized'}</h2>
-                        <h2 className="place-self-center" >{subscription.currency === 'PHP' ? '₱' : '$'} {Number(subscription.amount).toFixed(2)}</h2>
-                        <h2 className="place-self-center" >{subscription.month} {subscription.day}, {subscription.year}</h2>
-                        <h2 className={` ${subscription.is_active ? 'bg-green-900/50' : ' bg-(--border)'} px-2 rounded-full  w-fit place-self-center`} >{subscription.is_active ? 'Active' : 'Inactive'}</h2>
-                        <FontAwesomeIcon icon={faPenToSquare} onClick={() => open_edit_form(subscription)}  className="text-blue-800 hover:text-blue-700 transition-colors text-2xl cursor-pointer place-self-center" />
-                        <FontAwesomeIcon icon={faTrash} onClick={() => open_delete_confirmation(subscription)}  className="text-red-800 hover:text-red-700 transition-colors text-2xl cursor-pointer" />
+                  <div key={subscription.id}  className="grid grid-cols-2 md:grid-cols-8 items-center px-1 lg:px-4 py-1 lg:py-2.5 border-b border-(--border) " >
+                     <h1 className="text-base md:col-span-2 lg:col-span-3 text-center md:text-start w-full truncate " >{subscription.name}</h1>
+                     <h2 style={{ backgroundColor: subscription.category?.color_hex || 'var(--border)' }}  className=" px-1 md:px-2 text-xs rounded-full w-fit place-self-center " >{subscription.category?.name || 'Uncategorized'}</h2>
+                     <h2 className="place-self-center text-sm" >{subscription.currency === 'PHP' ? '₱' : '$'} {Number(subscription.amount).toFixed(2)}</h2>
+                     <h2 className="place-self-center text-sm col-span-1 md:col-span-2 lg:col-span-1" >{subscription.month} {subscription.day}, {subscription.year}</h2>
+                     <h2 className={` ${subscription.is_active ? 'bg-green-900/50' : ' bg-(--border)'} px-1 md:px-2 text-xs rounded-full  w-fit place-self-center`} >{subscription.is_active ? 'Active' : 'Inactive'}</h2>
+                     <div className="flex transition-colors text-xl gap-2 md:gap-4 place-self-center" >
+                        <FontAwesomeIcon icon={faPenToSquare} onClick={() => open_edit_form(subscription)}  className="text-(--fill-accent) hover:text-blue-400 active:text-(--fill-accent) cursor-pointer " />
+                        <FontAwesomeIcon icon={faTrash} onClick={() => open_delete_confirmation(subscription)}  className="text-(--fill-danger) hover:text-red-500 active:text-(--fill-danger) cursor-pointer " />
+                     </div>
                   </div>
                ))
-            ) : (<h2  className="mt-10 place-self-center text-3xl text-center w-full" >No subscriptions found.</h2>)}
+            ) : (<h2  className="mt-10 place-self-center text-lg text-center w-full" >No subscriptions found.</h2>)}
          </section>
 
          {/* Add Form */}
          {show_add_sub && (
             <section onClick={()=> set_show_add_sub(false)}  className=" top-0 left-0 w-full h-full absolute bg-black/50 flex justify-center items-center" >
                <form onSubmit={(e)=> add_sub(e)} onClick={(e)=> e.stopPropagation()}  className="w-full max-w-md bg-(--surface-1) rounded-xl p-8 gap-2 flex flex-col" >
-                  <input type="text" value={sub_name} maxLength={40} onChange={(e) => set_sub_name(e.target.value)}  placeholder="Subscription Name" required autoFocus  className="px-4 py-2.5 rounded-lg w-full" />
-                  <select value={sub_category_id} onChange={(e) => set_sub_category_id(Number(e.target.value))} required  className="px-2 py-2.5 rounded-lg w-full mt-4" >
+                  <input type="text" value={sub_name} maxLength={40} onChange={(e) => set_sub_name(e.target.value)}  placeholder="Subscription Name" required autoFocus  className=" text-sm px-4 py-2.5 rounded-lg w-full" />
+                  <select value={sub_category_id} onChange={(e) => set_sub_category_id(Number(e.target.value))} required  className="px-2 py-2.5 rounded-lg w-full mt-4 text-sm" >
                      <option disabled value="" >Category</option>
                      {categories.map((category) => (
                         <option key={category.id} value={category.id}>{category.name}</option>
                      ))}
                      <option value={0} >None</option>
                   </select>
-                  <input type="number" value={sub_amount} onChange={(e) => {let val = Number(e.target.value); if(val > 99999999) val = 99999999; set_sub_amount(val)}} placeholder="Amount" required className="px-4 py-2.5 rounded-lg w-full mt-4" />
-                  <select value={sub_currency} onChange={(e) => set_sub_currency(e.target.value)} required className="px-2 py-2.5 rounded-lg w-full mt-4" >
+                  <input type="number" value={sub_amount} onChange={(e) => {let val = Number(e.target.value); if(val > 99999999) val = 99999999; set_sub_amount(val)}} placeholder="Amount" required className="px-4 py-2.5 rounded-lg w-full mt-4 text-sm " />
+                  <select value={sub_currency} onChange={(e) => set_sub_currency(e.target.value)} required className="px-2 py-2.5 rounded-lg w-full mt-4 text-sm " >
                      <option disabled value="" >Currency</option>
                      <option value="PHP">PHP</option>
                      <option value="USD">USD</option>
                   </select>
-                  <label className="-mb-6 mt-2 text-(--text-muted) " >When did you start this subscription?</label>
+                  <label className="-mb-6 mt-2 text-(--text-muted) text-sm " >When did you start this subscription?</label>
                   <div className="flex gap-4 mt-4" >
-                     <select value={sub_month} onChange={(e) => set_sub_month(e.target.value)} required  className="px-4 py-2.5 rounded-lg w-full" >
+                     <select value={sub_month} onChange={(e) => set_sub_month(e.target.value)} required  className="px-1 md:px-4 py-2.5 rounded-lg w-full text-sm " >
                         <option disabled value="" >Month</option>
                         <option value="Jan">January</option>
                         <option value="Feb">February</option>
@@ -241,14 +243,14 @@ export default function Subscription() {
                         <option value="Nov">November</option>
                         <option value="Dec">December</option>
                      </select>
-                     <input type="number" value={sub_day} onChange={(e) => {let val = Number(e.target.value); if(val > 31) val=31; set_sub_day(val)}} required placeholder="Day" className="px-4 py-2.5 rounded-lg w-full" />
-                     <select value={sub_duration} onChange={(e) => set_sub_duration(e.target.value)} className="px-2 py-2.5 rounded-lg w-full" >
+                     <input type="number" value={sub_day} onChange={(e) => {let val = Number(e.target.value); if(val > 31) val=31; set_sub_day(val)}} required placeholder="Day" className="px-1 md:px-4 py-2.5 rounded-lg w-full text-sm " />
+                     <select value={sub_duration} onChange={(e) => set_sub_duration(e.target.value)} className="px-1 md:px-2 py-2.5 rounded-lg w-full text-sm" >
                         <option value={'monthly'}>Monthly</option>
                         <option value={'weekly'}>Weekly</option>
                            <option value={'yearly'}>Yearly</option>
                      </select>
                   </div>
-                  <button type="submit" disabled={loading}  className="px-4 py-2.5 outline-none active:bg-blue-700 mt-4 rounded-lg bg-blue-900 text-(--text-primary) hover:bg-blue-800 transition-colors" >{loading ? 'Adding Subscription...' : 'Add Subscription'}</button>
+                  <button type="submit" disabled={loading}  className="px-4 py-2.5 outline-none active:bg-blue-700 mt-4 rounded-lg bg-blue-900 text-(--text-primary) hover:bg-blue-800 transition-colors text-sm " >{loading ? 'Adding Subscription...' : 'Add Subscription'}</button>
                </form>
             </section>
          )}    
@@ -256,26 +258,26 @@ export default function Subscription() {
          {show_edit_sub && (
             <section onClick={()=> set_show_edit_sub(false)}  className=" top-0 left-0 w-full h-full absolute bg-black/50 flex justify-center items-center" >
                <form onSubmit={(e)=> edit_sub(e)} onClick={(e)=> e.stopPropagation()}  className="w-full max-w-md bg-(--surface-1) rounded-xl p-8 gap-2 flex flex-col" >
-                  <input type="text" value={new_sub_name} maxLength={40} onChange={(e) => set_new_sub_name(e.target.value)}  placeholder="Subscription Name" required  className="px-4 py-2.5 rounded-lg w-full" />
-                  <select value={Number(new_sub_category_id)} onChange={(e) => set_new_sub_category_id(Number(e.target.value))} required  className="px-2 py-2.5 rounded-lg w-full mt-4" >
+                  <input type="text" value={new_sub_name} maxLength={40} onChange={(e) => set_new_sub_name(e.target.value)}  placeholder="Subscription Name" required  className="px-4 py-2.5 rounded-lg w-full text-sm" />
+                  <select value={Number(new_sub_category_id)} onChange={(e) => set_new_sub_category_id(Number(e.target.value))} required  className="px-2 py-2.5 rounded-lg w-full mt-4 text-sm " >
                      {categories.map((category) => (
                         <option key={category.id} value={category.id}>{category.name}</option>
                      ))}
                      <option value={0} >None</option>
                   </select>
-                  <input type="number" value={new_sub_amount} onChange={(e) => {let val = Number(e.target.value); if(val > 99999999) val = 99999999; set_new_sub_amount(val)}} placeholder="Amount" required className="px-4 py-2.5 rounded-lg w-full mt-4" />
-                  <select value={new_sub_currency} onChange={(e) => set_new_sub_currency(e.target.value)} required className="px-2 py-2.5 rounded-lg w-full mt-4" >
+                  <input type="number" value={new_sub_amount} onChange={(e) => {let val = Number(e.target.value); if(val > 99999999) val = 99999999; set_new_sub_amount(val)}} placeholder="Amount" required className="px-4 py-2.5 rounded-lg w-full mt-4 text-sm" />
+                  <select value={new_sub_currency} onChange={(e) => set_new_sub_currency(e.target.value)} required className="px-2 py-2.5 rounded-lg w-full mt-4 text-sm" >
                      <option disabled value="" >Currency</option>
                      <option value="PHP">PHP</option>
                      <option value="USD">USD</option>
                   </select>
                   <div className="flex items-center justify-center gap-2" >
-                     <input type="checkbox" id="active" checked={new_sub_is_active} onChange={(e) => set_new_sub_is_active(e.target.checked)} className="scale-110 peer cursor-pointer" />
+                     <input type="checkbox" id="active" checked={new_sub_is_active} onChange={(e) => set_new_sub_is_active(e.target.checked)} className=" md:scale-110 peer cursor-pointer" />
                      <label htmlFor="active"  className="text-(--text-primary) peer-hover:text-blue-500 cursor-pointer " >Active</label>
                   </div>
-                  <label className="-mb-6 mt-2 text-(--text-muted) " >Last due date.</label>
+                  <label className="-mb-6 mt-2 text-(--text-muted) text-sm" >Last due date.</label>
                   <div className="flex gap-4 mt-4" >
-                     <select value={new_sub_month} onChange={(e) => set_new_sub_month(e.target.value)} required  className="px-4 py-2.5 rounded-lg w-fit" >
+                     <select value={new_sub_month} onChange={(e) => set_new_sub_month(e.target.value)} required  className="px-1 md:px-4 py-2.5 rounded-lg w-fit text-sm" >
                         <option disabled value="" >Month</option>
                         <option value="Jan">January</option>
                         <option value="Feb">February</option>
@@ -290,14 +292,14 @@ export default function Subscription() {
                         <option value="Nov">November</option>
                         <option value="Dec">December</option>
                      </select>
-                     <input type="number" value={new_sub_day} onChange={(e) => set_new_sub_day(Number(e.target.value) || 1)} required placeholder="Day" className="px-4 py-2.5 rounded-lg w-full" />
-                     <select value={new_sub_duration} onChange={(e) => set_new_sub_duration(String(e.target.value))} className="px-2 py-2.5 rounded-lg w-full" >
+                     <input type="number" value={new_sub_day} onChange={(e) => set_new_sub_day(Number(e.target.value) || 1)} required placeholder="Day" className="px-1 md:px-4 py-2.5 rounded-lg w-full text-sm" />
+                     <select value={new_sub_duration} onChange={(e) => set_new_sub_duration(String(e.target.value))} className="px-1 md:px-2 py-2.5 rounded-lg w-full text-sm" >
                         <option value={'monthly'}>Monthly</option>
                         <option value={'weekly'}>Weekly</option>
                            <option value={'yearly'}>Yearly</option>
                      </select>
                   </div>
-                  <button type="submit" disabled={loading}  className="px-4 py-2.5 outline-none active:bg-blue-700 mt-4 rounded-lg bg-blue-900 text-(--text-primary) hover:bg-blue-800 transition-colors" >{loading ? 'Saving Changes...' : 'Save Changes'}</button>
+                  <button type="submit" disabled={loading}  className="px-4 py-2.5 outline-none active:bg-blue-700 mt-4 rounded-lg bg-blue-900 text-(--text-primary) hover:bg-blue-800 transition-colors text-sm" >{loading ? 'Saving Changes...' : 'Save Changes'}</button>
                </form>
             </section>
          )}
@@ -306,10 +308,10 @@ export default function Subscription() {
          {show_delete_sub && (
             <section onClick={()=> set_show_delete_sub(false)}  className=" top-0 left-0 w-full h-full absolute bg-black/50 flex justify-center items-center" >
                <div onClick={(e)=> {e.stopPropagation(); e.preventDefault()}}  className="w-full max-w-md bg-(--surface-1) rounded-xl p-8 gap-2 flex flex-col" >
-                  <h1 className="text-xl font-bold text-center" >Are you sure you want to delete {sub_to_delete_name} subscription?</h1>
-                  <div className="flex gap-4 mt-4 justify-center" >
-                     <button onClick={(e)=> delete_sub(e)} disabled={loading}  className="px-4 py-2.5 outline-none active:bg-red-700 rounded-lg bg-red-900 text-(--text-primary) hover:bg-red-800 transition-colors" >{loading ? 'Deleting...' : 'Delete'}</button>
-                     <button onClick={()=> set_show_delete_sub(false)}  className="px-4 py-2.5 outline-none active:bg-blue-700 rounded-lg bg-blue-900 text-(--text-primary) hover:bg-blue-800 transition-colors" >Cancel</button>
+                  <h1 className="text-sm font-bold text-center" >Are you sure you want to delete {sub_to_delete_name} subscription?</h1>
+                  <div className="flex gap-4 mt-4 justify-center text-sm transition-colors" >
+                     <button onClick={(e)=> delete_sub(e)} disabled={loading}  className="px-4 py-2.5 outline-none active:bg-red-700 rounded-lg bg-red-900 text-(--text-primary) hover:bg-red-800" >{loading ? 'Deleting...' : 'Delete'}</button>
+                     <button onClick={()=> set_show_delete_sub(false)}  className="px-4 py-2.5 outline-none active:bg-blue-700 rounded-lg bg-blue-900 text-(--text-primary) hover:bg-blue-800" >Cancel</button>
                   </div>
                </div>
             </section>

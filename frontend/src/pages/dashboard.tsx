@@ -127,84 +127,83 @@ export default function Dashboard() {
    return (
       <main className="w-full bg-(--page-bg) gap-4 flex flex-col h-full" >
          {/* Status */}
-         <section className=" h-fit w-full gap-4 flex" >
+         <section className=" h-fit w-full gap-4 flex flex-col md:flex-row" >
             <div className="bg-(--surface-1) rounded-lg p-4 w-full gap-2 flex flex-col" >
                <h2>Monthly Spend</h2>
-               <h1 className="text-4xl" >₱ {monthly_php} <span className="text-(--text-muted)" >|</span> $ {monthly_usd}</h1>
+               <h1 className=" text-2xl " >₱ {monthly_php} <span className="text-(--text-muted)" >|</span> $ {monthly_usd}</h1>
             </div>
             <div className="bg-(--surface-1) rounded-lg p-4 w-full gap-2 flex flex-col" >
                <h2>Active Subscriptions</h2>
-               <h1 className="text-4xl" >{active_subs}</h1>
+               <h1 className=" text-2xl" >{active_subs}</h1>
             </div>
             <div className="bg-(--surface-1) rounded-lg p-4 w-full gap-2 flex flex-col" >
                <h2>Due in 7 days</h2>
-               <h1 className="text-4xl" >{due_1_week}</h1>
+               <h1 className="text-2xl" >{due_1_week}</h1>
             </div>
             <div className="bg-(--surface-1) rounded-lg p-4 w-full gap-2 flex flex-col" >
                <h2>Total Budget</h2>
-               <h1 className="text-3xl" >₱ {php_budget} <br />$ {usd_budget}</h1>
+               <h1 className="text-2xl" >₱ {php_budget} <br />$ {usd_budget}</h1>
             </div>
-
          </section>
          {/* Analytics */}
-         <section className="grid grid-cols-5 gap-4 items-start">
+         <section className="grid grid-cols-1 md:grid-cols-5 gap-4 items-start" >
             {/* Left half */}
-            <div className="flex flex-col col-span-3 gap-4">
+            <div className="flex flex-col md:col-span-3 gap-4">
                {/* Renewals */}
                <div className="bg-(--surface-2) rounded-lg p-4 border border-(--border) gap-3 flex flex-col">
-                  <h1 className="text-xl">Upcoming Renewals</h1>
+                  <h1 className="text-lg">Upcoming Renewals</h1>
                   {renewals.length !== 0 ? renewals.map(renewal => (
                      <div key={renewal.id} className="flex items-center border-b p-1 border-(--border) relative" >
                         <div className="w-2 h-2 aspect-square rounded-full mr-2" style={{background: renewal.category.color_hex}}></div>
-                        <h1>{renewal.name}</h1>
-                        <div className=" absolute right-0 flex gap-4" >
-                           <h2>{renewal.month} {renewal.day}</h2>
-                           <h2>{renewal.currency === 'PHP' ? '₱' : '$'} {renewal.amount}</h2>
+                        <h1 className="text-base truncate" >{renewal.name}</h1>
+                        <div className=" absolute right-0 flex gap-2 md:gap-4 " >
+                           <h2 className="text-sm" >{renewal.month} {renewal.day}</h2>
+                           <h2 className="text-sm" >{renewal.currency === 'PHP' ? '₱' : '$'} {renewal.amount}</h2>
                         </div>
                      </div>
                   )) : (
-                     <h2 className="place-self-center text-xl " >No upcoming renewals.</h2>
+                     <h2 className="place-self-center text-lg" >No upcoming renewals.</h2>
                   )}
                </div>
                {/* Spend by category */}
                <div className="bg-(--surface-2) rounded-lg p-4 border border-(--border) flex flex-col gap-3">
                   <div className="flex justify-between items-center" >
-                     <h1 className="text-xl" >Spend by Category</h1>
+                     <h1 className="text-lg" >Spend by Category</h1>
                      {/* Toggle button */}
-                     <div onClick={()=> set_toggle(toggle === 'PHP' ? 'USD' : 'PHP')}  className="p-1 px-3 gap-6 rounded-full bg-(--surface-1) flex items-center justify-around relative cursor-pointer" >
+                     <div onClick={()=> set_toggle(toggle === 'PHP' ? 'USD' : 'PHP')}  className="p-1 px-2 md:x-3 gap-6 rounded-full bg-(--surface-1) flex items-center justify-around relative cursor-pointer" >
                         <div className={` ${toggle === 'PHP' ? 'left-[1%]' : 'left-[48%]'} bg-blue-900 w-1/2 h-9/10 absolute rounded-full transition-all`} ></div>
-                        <h1 className="z-10" >PHP</h1>
-                        <h1 className="z-10" >USD</h1>
+                        <h1 className="z-10 text-base" >PHP</h1>
+                        <h1 className="z-10 text-base" >USD</h1>
                      </div>
                   </div>
                   {category_spent.length !== 0 ? category_spent.map(c => (
                      <Progress page="dashboard_category" key={c.category_id} id={c.category_id} color={c.category_hex} name={c.category_name} current={c.total_amount} max={c.category_budget} symbol={toggle === 'PHP' ? '₱' : '$'} />
                   )) : (
-                     <h2 className="place-self-center text-xl " >No Category.</h2>
+                     <h2 className="place-self-center text-lg " >No Category.</h2>
                   )}
                </div>
             </div>
             {/* Right half */}
-            <div className="flex flex-col gap-4 col-span-2">
-               <div className=" bg-(--surface-2) border border-(--border) rounded-lg p-4 gap-3 flex flex-col max-h-50 overflow-x-hidden">
-                  <h1 className="text-xl" >Notifications</h1>
+            <div className="flex flex-col gap-4 md:col-span-2  w-full">
+               <div className=" bg-(--surface-2) border border-(--border) rounded-lg p-4 gap-3 flex flex-col max-h-50 overflow-x-hidden w-full">
+                  <h1 className="text-lg" >Notifications</h1>
                   <div>
                      {notifications.length !== 0 ? notifications.map(notif => (
-                        <div key={notif.id} className="border-b border-(--border) p-1 flex justify-between " >
+                        <div key={notif.id} className="border-b border-(--border) p-1 flex justify-between w-full border" >
                            <div className="flex gap-2" >
-                              <h1>{notif.subscription.name}</h1>
-                              <h2>{notif.message}</h2>
+                              <h1 className="text-base" >{notif.subscription.name}</h1>
+                              <h2 className="text-sm" >{notif.message}</h2>
                            </div>
                            
-                           <h1>{notif.subscription.currency === 'PHP' ? '₱' : '$'} {notif.subscription.amount}</h1>
+                           <h1 className="text-sm" >{notif.subscription.currency === 'PHP' ? '₱' : '$'} {notif.subscription.amount}</h1>
                         </div>
                      )) : (
-                        <h2 className="place-self-center text-xl " >No notification today.</h2>
+                        <h2 className="place-self-center text-lg " >No notification today.</h2>
                      )}
                   </div>
                </div>
                <div className="bg-(--surface-2) rounded-lg p-4 border border-(--border) flex flex-col gap-3 ">
-                  <h1 className="text-xl" >Budget this month</h1>
+                  <h1 className="text-lg" >Budget this month</h1>
                   <div className="flex flex-col gap-2" >
                      <Progress page="dashboard_budget"  name={'PHP'} left={budget.php_left}  current={budget.php_spent} max={budget.php_budget} symbol={'₱'} />
                      <Progress page="dashboard_budget" name={'USD'} left={budget.usd_left} current={budget.usd_spent} max={budget.usd_budget} symbol={'$'} />

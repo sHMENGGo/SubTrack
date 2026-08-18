@@ -25,7 +25,6 @@ export default function Category() {
       }
       get_categories()
    }, [refresh])
-   console.log(category_summary)
 
    // Add category
    const [show_add_category, set_show_add_category] = useState(false)
@@ -84,7 +83,6 @@ export default function Category() {
       set_cat_id_to_delete(cat.id)
       set_cat_name_to_delete(cat.name)
       set_show_delete_category(true)
-      console.log(cat.id)
    }
    const delete_category = async (e: any)=> {
       set_loading(true)
@@ -109,19 +107,19 @@ export default function Category() {
       <main className="flex gap-4 w-full h-full flex-wrap" >
          {/* Add category button */}
          <div onClick={()=> set_show_add_category(true)}  className="flex flex-col justify-center items-center w-fit min-w-2xs p-4 rounded-lg bg-(--surface-2) border border-(--border) cursor-pointer hover:bg-(--surface-1) active:ring-2 ring-blue-950 "  >
-            <h2 className="text-7xl" >+</h2>
-            <h2>Add Category</h2>
+            <h2 className="text-5xl" >+</h2>
+            <h2 className="text-sm" >Add Category</h2>
          </div>
          {/* Category cards */}
          {category_summary.length !== 0 ? category_summary.map((cat: any) => (
             <div key={cat.id} className="flex flex-col gap-2 w-fit min-w-2xs p-4 rounded-lg bg-(--surface-2) border border-(--border) " >
                <div style={{ background: cat.color_hex }}  className="w-full h-6 rounded bg-blue-900" ></div>
-               <h1 className="text-2xl" >{cat.name}</h1>
-               <h2>{cat.subs_count} Subs</h2>
-               <h2>Total: ₱ {cat.php_sub_amount} | $ {cat.usd_sub_amount}</h2>
-               <div className="flex justify-end text-2xl gap-4" >
-                  <FontAwesomeIcon icon={faPenToSquare} onClick={()=> open_edit(cat)}  className="text-blue-800 hover:text-blue-700 cursor-pointer" />
-                  <FontAwesomeIcon icon={faTrash} onClick={()=> open_delete(cat)}  className="cursor-pointer text-red-800 hover:text-red-700 " />
+               <h1 className="text-lg" >{cat.name}</h1>
+               <h2 className="text-sm" >{cat.subs_count} Subs</h2>
+               <h2 className="text-sm" >Total: ₱ {cat.php_sub_amount} | $ {cat.usd_sub_amount}</h2>
+               <div className="flex justify-end text-xl gap-2" >
+                  <FontAwesomeIcon icon={faPenToSquare} onClick={()=> open_edit(cat)}  className="text-(--fill-accent) hover:text-blue-400 active:text-(--fill-accent) cursor-pointer" />
+                  <FontAwesomeIcon icon={faTrash} onClick={()=> open_delete(cat)}  className="cursor-pointer text-(--fill-danger) active:text-(--fill-danger) hover:text-red-500 " />
                </div>
             </div>
          )) : (
