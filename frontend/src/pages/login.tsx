@@ -89,14 +89,9 @@ export default function Login() {
    }
 
    // Forgot password send code
-   const [show_forgot_form, set_show_forgot_form] = useState(false)
+   const [show_forgot_form, set_show_forgot_form] = useState('')
    const [sending_forgot_code, set_sending_forgot_code]= useState(false)
-   const [forogt_code_verifying, set_forogt_code_verifying] = useState(false)
-   const [forgot_code, set_forgot_code] = useState('')
    const [email_to_change_pass, set_email_to_change_pass] = useState('')
-   const [show_change_pass_form, set_show_change_pass_form] = useState(false)
-   const [new_password, set_new_password] = useState('')
-   const [submitting_pass, set_submitting_pass] = useState(false)
    const forgot_send_code = async (e: React.SubmitEvent)=> {
       e.preventDefault()
       set_sending_forgot_code(true)
@@ -106,7 +101,7 @@ export default function Login() {
             body: JSON.stringify({ email })
          })
          set_email_to_change_pass(data.email)
-         set_show_forgot_form(true)
+         set_show_forgot_form('verify')
          toast.success(data.message)
       } catch(err: any) {
          toast.error(err.message)
@@ -114,7 +109,10 @@ export default function Login() {
       }
       finally { (set_sending_forgot_code(false)) }
    }
+
    // Forgot password verify code
+   const [forgot_code, set_forgot_code] = useState('')
+   const [forogt_code_verifying, set_forogt_code_verifying] = useState(false)
    const forgot_verify_code = async (e: React.SubmitEvent)=> {
       e.preventDefault()
       set_forogt_code_verifying(true)
@@ -124,14 +122,16 @@ export default function Login() {
             body: JSON.stringify({ forgot_code })
          })
          toast.success(data.message)
-         set_show_forgot_form(false)
-         set_show_change_pass_form(true)
+         set_show_forgot_form('change_pass')
       } catch(err: any) {
          toast.error(err.message)
          console.log('Error sending code: ', err)
       } finally { (set_forogt_code_verifying(false)) }
    }
+
    // Change password after forgot verification
+   const [submitting_pass, set_submitting_pass] = useState(false)
+   const [new_password, set_new_password] = useState('')
    const change_pass = async (e: React.SubmitEvent)=> {
       e.preventDefault()
       set_submitting_pass(true)
@@ -141,8 +141,8 @@ export default function Login() {
             body: JSON.stringify({ new_password })
          })
          toast.success(data.message)
-         set_show_change_pass_form(false)
          set_new_password('')
+         set_show_forgot_form('')
       } catch(err: any) {
          toast.error(err.message)
          console.log('Error sending code: ', err)
@@ -264,31 +264,35 @@ export default function Login() {
             </section>
          )}
 
-         {/* Input code form */}
+         {/* Input code register form */}
          {show_code_form && (
             <section onClick={()=> set_show_code_form(false)}  className=" top-0 left-0 w-full h-full absolute bg-black/50 flex justify-center items-center" >
                <form onSubmit={register_verify_code} onClick={(e)=> e.stopPropagation()}  className="w-full max-w-md bg-(--surface-1) rounded-xl p-8 gap-2 flex flex-col items-center" >
+                  <h1 className='text-xl font-semibold' >Register Account</h1><br />
                   <h1 className='text-sm' >Input 6 digit verification code sent to your email</h1>
                   <input type="text" maxLength={6} name='code' value={code} onChange={(e) => set_code(e.target.value)} required  className="px-4 py-2.5 rounded-lg text-center tracking wider text-sm " />
+                  <p className='text-(--text-primary) text-xs ' >Didn't receive the code? <span onClick={(e: any)=> register_send_code(e)}  className='text-(--fill-accent) active:text-(--fill-accent) cursor-pointer hover:text-blue-400  ' >{sending_code ? 'Resending...' : 'Resend'}</span></p>
                   <button type="submit"  className="px-4 py-2.5 outline-none active:bg-blue-700 mt-4 rounded-lg bg-blue-900 text-(--text-primary) hover:bg-blue-800 transition-colors text-sm" >{verifying ? 'Verifying...' : 'Verify'}</button>
                </form>
             </section>
          )}
 
          {/* Input code forgot password form */}
-         {show_forgot_form && (
-            <section onClick={()=> set_show_forgot_form(false)}  className=" top-0 left-0 w-full h-full absolute bg-black/50 flex justify-center items-center" >
+         {show_forgot_form === 'verify' && (
+            <section onClick={()=> set_show_forgot_form('')}  className=" top-0 left-0 w-full h-full absolute bg-black/50 flex justify-center items-center" >
                <form onSubmit={forgot_verify_code} onClick={(e)=> e.stopPropagation()}  className="w-full max-w-md bg-(--surface-1) rounded-xl p-8 gap-2 flex flex-col items-center" >
+                  <h1 className='text-xl font-semibold' >Recover Account</h1><br />
                   <h1 className='text-center text-sm' >Input 6 digit verification code sent to <br /> {email_to_change_pass}</h1>
                   <input type="text" maxLength={6} value={forgot_code} onChange={(e) => set_forgot_code(e.target.value)} required  className="px-4 py-2.5 rounded-lg text-center tracking wider tracking-widest text-sm " />
+                  <p className='text-(--text-primary) text-xs ' >Didn't receive the code? <span onClick={(e: any)=> forgot_send_code(e)}  className='text-(--fill-accent) active:text-(--fill-accent) cursor-pointer hover:text-blue-400  ' >{sending_forgot_code ? 'Resending...' : 'Resend'}</span></p>
                   <button type="submit"  className="px-4 py-2.5 outline-none active:bg-blue-700 mt-4 rounded-lg bg-blue-900 text-(--text-primary) hover:bg-blue-800 transition-colors text-sm" >{forogt_code_verifying ? 'Verifying...' : 'Verify'}</button>
                </form>
             </section>
          )}
 
          {/* Input change password form after verification */}
-         {show_change_pass_form && (
-            <section onClick={()=> set_show_change_pass_form(false)}  className=" top-0 left-0 w-full h-full absolute bg-black/50 flex justify-center items-center" >
+         {show_forgot_form === 'change_pass' && (
+            <section onClick={()=> set_show_forgot_form('')}  className=" top-0 left-0 w-full h-full absolute bg-black/50 flex justify-center items-center" >
                <form onSubmit={change_pass} onClick={(e)=> e.stopPropagation()}  className="w-full max-w-md bg-(--surface-1) rounded-xl p-8 gap-2 flex flex-col items-center" >
                   <h1 className='text-sm' >Enter new password for this account.</h1>
                   <input type="text" value={new_password} onChange={(e) => set_new_password(e.target.value)} required  className="px-4 py-2.5 rounded-lg text-center tracking wider text-sm" />

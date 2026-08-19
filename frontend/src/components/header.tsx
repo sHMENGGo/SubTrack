@@ -127,15 +127,15 @@ export default function Header() {
                   {notifications.length !== 0 ? notifications.map(notif => (
                      <div key={notif.notify_at}  className={` ${notif.is_read ? 'opacity-50' : 'opacity-100'} border-b border-(--border) p-2 pr-4 flex items-center gap-2 justify-between `} >
                         <div className="flex gap-2 items-center" >
-                           <FontAwesomeIcon className={`${type_color[notif.type] || 'text-(--border)'} text-3xl`} icon={notif_icon[notif.type]} />
+                           <FontAwesomeIcon className={`${type_color[notif.type] || 'text-(--border)'} text-xl`} icon={notif_icon[notif.type]} />
                               <div className="flex flex-col" >
-                                 <h1 className="font-semibold text-xl" >{notif.subscription.name}</h1>
-                                 <h2>{notif.message}</h2>
+                                 <h1 className="font-semibold text-sm" >{notif.subscription.name}</h1>
+                                 <h2 className="text-xs" >{notif.message}</h2>
                               </div>
                         </div>
                         <div className="flex flex-col items-end" >
-                           <h1>{notif.subscription.currency === 'PHP' ? '₱' : '$'} {notif.amount}</h1>
-                           <h1>{notif.month} {notif.day}</h1>
+                           <h1 className="text-xs" >{notif.subscription.currency === 'PHP' ? '₱' : '$'} {notif.amount}</h1>
+                           <h1 className="text-xs" >{notif.month} {notif.day}</h1>
                         </div>
                      </div>
                   )) : (

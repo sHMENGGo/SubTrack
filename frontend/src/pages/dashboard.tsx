@@ -170,10 +170,10 @@ export default function Dashboard() {
                   <div className="flex justify-between items-center" >
                      <h1 className="text-lg" >Spend by Category</h1>
                      {/* Toggle button */}
-                     <div onClick={()=> set_toggle(toggle === 'PHP' ? 'USD' : 'PHP')}  className="p-1 px-2 md:x-3 gap-6 rounded-full bg-(--surface-1) flex items-center justify-around relative cursor-pointer" >
+                     <div onClick={()=> set_toggle(toggle === 'PHP' ? 'USD' : 'PHP')}  className="p-1 px-3 gap-6 rounded-full bg-(--surface-1) flex items-center justify-around relative cursor-pointer" >
                         <div className={` ${toggle === 'PHP' ? 'left-[1%]' : 'left-[48%]'} bg-blue-900 w-1/2 h-9/10 absolute rounded-full transition-all`} ></div>
-                        <h1 className="z-10 text-base" >PHP</h1>
-                        <h1 className="z-10 text-base" >USD</h1>
+                        <h1 className="z-10 text-sm" >PHP</h1>
+                        <h1 className="z-10 text-sm" >USD</h1>
                      </div>
                   </div>
                   {category_spent.length !== 0 ? category_spent.map(c => (

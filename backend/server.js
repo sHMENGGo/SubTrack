@@ -1016,6 +1016,7 @@ app.get('/dashboard/renewals', token_auth, async (req, res) => {
    }
 })
 
+
 // Get active expenses by category
 app.post('/dashboard/category_spent', token_auth, async (req, res) => {
    const { toggle } = req.body
@@ -1023,17 +1024,30 @@ app.post('/dashboard/category_spent', token_auth, async (req, res) => {
    if (!toggle) return res.status(400).json({ message: 'Currency is required.' })
 	if(typeof toggle !== 'string' || toggle.trim().length === 0) return res.status(400).json({ message: 'Invalid currency.' })  
 
+	// Start of month
+   const today = new Date();
+   const today_year = today.getFullYear();
+	const month_index = today.getMonth() + 1
+   const month = String(today.getMonth() + 1).padStart(2,'0');
+   const start_of_month = `${today_year}-${month}-01T00:00:00.000Z`;
+   // Last of month: new Date(year, month, 0) gets the last day of the PREVIOUS month.
+   // So passing today.getMonth() + 1 gets the last day of the CURRENT month.
+   const last_day_date = new Date(today_year, today.getMonth() + 1, 0);
+   const last_day = String(last_day_date.getDate()).padStart(2, '0');
+   const end_of_month = `${today_year}-${month}-${last_day}T23:59:59.999Z`;
+	
 	const cache_key = `category_spent:${req.user.id}:${toggle}`
    try {
 		const result = await get_or_set_cache(cache_key, 300, async ()=> {
-			// Get subscriptions spent (active only)
+			// Get subscriptions total amount by category (active only)
 			const grouped_spent = await prisma.subscription.groupBy({
 				by: ['category_id'],
 				where: {
 					currency: toggle,
 					user_id: req.user.id,
 					category_id: { not: null },
-					is_active: true
+					is_active: true,
+					next_billing_date: { gte: start_of_month, lte: end_of_month }
 				},
 				_sum: { amount: true }
 			})
@@ -1044,9 +1058,6 @@ app.post('/dashboard/category_spent', token_auth, async (req, res) => {
 				select: { id: true, name: true, color_hex: true }
 			})
 			// Get budget of this month
-			const today = new Date()
-			const today_year = today.getFullYear()
-			const month_index = today.getMonth() + 1
 			const budgets = await prisma.budget.findMany({
 				where: {
 					currency: toggle,
@@ -1071,7 +1082,6 @@ app.post('/dashboard/category_spent', token_auth, async (req, res) => {
 		
 			return { spent_category }
 		})
-      
       res.status(200).json({ spent_category: result.spent_category, message: 'Spent by category retrieved successfully.' })
    } catch (error) {
       console.log('error: ', error)
