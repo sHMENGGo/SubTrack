@@ -1,5 +1,5 @@
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/';
 
 export async function custom_fetch(endpoint: string, options: RequestInit = {}) {
   const headers = {
