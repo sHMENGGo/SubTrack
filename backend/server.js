@@ -45,8 +45,8 @@ const token_auth = (req, res, next) => {
 
 // Route that cron-job.org use to run daily_automation.js
 const { run_daily_job } = require('./daily_automation')
-app.post('/cron/daily-job', async (req, res) => {
-   const secret = req.headers['X-cron-secret']
+app.get('/cron/daily-job', async (req, res) => {
+   const secret = req.headers['x-cron-secret']
    if (secret !== process.env.CRON_SECRET) return res.status(401).json({ message: 'Unauthorized' })
    try {
       await run_daily_job()
