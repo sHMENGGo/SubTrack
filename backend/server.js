@@ -17,7 +17,10 @@ const prisma = new PrismaClient({ adapter })
 
 // Middleware
 const app = express()
-app.use(cors({ origin: 'http://localhost:5173', credentials: true }))
+app.use(cors({ 
+	origin: is_production ? process.env.FRONTEND_URL :'https://mysubtrack.vercel.app/', 
+	credentials: true 
+}))
 app.use(express.json())
 app.use(cookie_parser())
 app.set('trust proxy', 1)
