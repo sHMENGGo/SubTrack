@@ -8,6 +8,7 @@ const { login_limiter, register_limiter, two_fa_limiter } = require('./rate_limi
 const bcrypt = require('bcrypt')
 const { send_forgot_verification_email, send_register_verification_email } = require('./mailer')
 const { get_or_set_cache, delete_cache } = require('./redis')
+const is_production = process.env.NODE_ENV === 'production'
 require('dotenv').config()
 
 // Prisma 
@@ -75,9 +76,8 @@ app.post('/login', login_limiter,async (req, res) => {
 		
 		res.cookie('token', token, { 
 			httpOnly: true, 
-			secure: process.env.NODE_ENV === 'production',
-			sameSite: 'strict',
-			// secure: true,
+			secure: is_production,
+			sameSite: is_production ? 'none' : 'strict',
 			...(remember_me ? { maxAge: 30 * 24 * 60 * 60 * 1000 } : { maxAge: 60 * 60 * 1000 }) // 30 days or 1 hours
 		})
 		
@@ -120,8 +120,8 @@ app.post('/register/send_code', register_limiter, async (req, res) => {
 		res.cookie('verification_token', verification_token, {
          httpOnly: true,
          maxAge: 10 * 60 * 1000, // 10 min
-         sameSite: 'lax',
-			// secure: true
+         sameSite: is_production ? 'none' : 'lax',
+			secure: is_production
       })
 		await send_register_verification_email(reg_email, code)
 
@@ -177,8 +177,8 @@ app.post('/forgot/send_code', register_limiter, async (req, res) => {
 		res.cookie('verification_token_forgot', verification_token_forgot, {
          httpOnly: true,
          maxAge: 10 * 60 * 1000, // 10 min
-         sameSite: 'lax',
-			// secure: true
+         sameSite: is_production ? 'none' : 'lax',
+			secure: is_production
       })
 		await send_forgot_verification_email(email_db, code)
 
