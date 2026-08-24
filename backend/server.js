@@ -21,13 +21,13 @@ app.use(cors({ origin: 'http://localhost:5173', credentials: true }))
 app.use(express.json())
 app.use(cookie_parser())
 app.set('trust proxy', 1)
-const PORT = process.env.PORT
+const PORT = process.env.PORT || 3001
 
 // Health Check Route
 app.get('/', (req, res) => {res.status(200).json({ message: 'Express backend is live and routing!' })})
 
 // Start Server
-app.listen(PORT, () => {console.log(`Server is running on http://localhost:${PORT}`)})
+app.listen(PORT, '0.0.0.0', () => {console.log(`Server is running on port ${PORT}`)})
 
 // Token authentication function
 const token_auth = (req, res, next) => {
