@@ -98,7 +98,7 @@ export default function Header() {
                <button onClick={()=> navigate('/budget', {replace: true})}  className="text-(--text-primary) hover:text-(--text-secondary) transition-colors duration-200" >Budget</button>
                <button onClick={()=> navigate('/history', {replace: true})}  className="text-(--text-primary) hover:text-(--text-secondary) transition-colors duration-200" >History</button>
                <div className="relative" >
-                  {notif_count !== 0 && (<h1 className="absolute text-sm md:text-md lg:text-lg -right-2 -top-2 p-[0.2rem] rounded-full bg-(--fill-danger) " >{notif_count}</h1>)}
+                  {notif_count !== 0 && (<h1 className="absolute text-[0.8rem] -right-2 -top-2 px-2 rounded-full bg-(--fill-danger) " >{notif_count}</h1>)}
                   <FontAwesomeIcon icon={faBell} onClick={()=> set_show_notif(!show_notif)}  className="text-(--text-primary) text-lg md:text-xl lg:text-2xl cursor-pointer hover:text-(--text-secondary) active:text-(--text-primary) " />
                </div>
                <FontAwesomeIcon icon={faRightFromBracket} onClick={()=> set_show_logout(true)}  className="text-(--text-primary) text-lg md:text-xl lg:text-2xl cursor-pointer hover:text-(--text-secondary) active:text-(--text-primary) " />
@@ -118,7 +118,7 @@ export default function Header() {
          )}
 
          {show_notif && (
-            <section className="absolute w-1/3 h-2/3 flex flex-col border border-(--border) bg-(--surface-2) rounded-lg right-4 top-16 gap-2 overflow-y-auto overflow-x-hidden z-50" >
+            <section className="absolute w-9/10 md:w-1/3 h-2/3 flex flex-col border border-(--border) bg-(--surface-2) rounded-lg right-4 top-16 gap-2 overflow-y-auto overflow-x-hidden z-50" >
                <div className="flex justify-between p-2 " >
                   <h1 className="text-xl" >Notifications</h1>
                   <p onClick={mark_all}  className="text-(--fill-accent) cursor-pointer hover:text-blue-400 active:text-(--fill-accent) " >{marking_all ? 'Marking...' : 'Mark all as read'}</p>

@@ -18,7 +18,7 @@ const prisma = new PrismaClient({ adapter })
 // Middleware
 const app = express()
 app.use(cors({ 
-	origin: is_production ? process.env.FRONTEND_URL :'https://mysubtrack.vercel.app/', 
+	origin: is_production ? process.env.FRONTEND_URL :'http://localhost:5173', 
 	credentials: true 
 }))
 app.use(express.json())

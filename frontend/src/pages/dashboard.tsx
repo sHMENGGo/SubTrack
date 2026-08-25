@@ -110,6 +110,9 @@ export default function Dashboard() {
       }; get_notifications()
    }, [])
 
+   // Mark this notification as read
+   
+
    // Get budget left this month
    const [budget, set_budget] = useState<any>([])
    useEffect(()=> {
@@ -189,7 +192,7 @@ export default function Dashboard() {
                   <h1 className="text-lg" >Notifications</h1>
                   <div>
                      {notifications.length !== 0 ? notifications.map(notif => (
-                        <div key={notif.id} className="border-b border-(--border) p-1 flex justify-between w-full border" >
+                        <div key={notif.id} className="border-b border-(--border) p-1 flex justify-between w-full" >
                            <div className="flex gap-2" >
                               <h1 className="text-base" >{notif.subscription.name}</h1>
                               <h2 className="text-sm" >{notif.message}</h2>

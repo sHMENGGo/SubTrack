@@ -89,11 +89,11 @@ async function generate_notifications_for_offset(days_offset, type, message, log
 
 // Full daily job: advance billing dates, then generate all renewal notifications
 async function run_daily_job() {
-   await update_billing_dates()
    await generate_notifications_for_offset(7, 'ONE_WEEK_BEFORE', 'Renews in 1 week', '1 week due date')
    await generate_notifications_for_offset(3, 'THREE_DAYS_BEFORE', 'Renews in 3 days', '3 days due date')
    await generate_notifications_for_offset(1, 'ONE_DAY_BEFORE', 'Renews tomorrow', '1 day due date')
    await generate_notifications_for_offset(0, 'DUE_TODAY', 'Due today', 'due today')
+   await update_billing_dates()
 }
 
 module.exports = { run_daily_job }
