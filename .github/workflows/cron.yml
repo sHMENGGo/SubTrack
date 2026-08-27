@@ -18,4 +18,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Trigger daily billing update/notif job
-        run: curl --max-time 90 -sf https://subtrack-iq02.onrender.com/cron/daily-job -H "x-cron-secret: ${{ secrets.CRON_SECRET }}"
+        run: | 
+          curl --max-time 90 -sf https://subtrack-iq02.onrender.com/cron/daily-job -H "x-cron-secret: ${{ secrets.CRON_SECRET }}"
