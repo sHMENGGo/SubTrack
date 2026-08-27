@@ -1,0 +1,21 @@
+name: subtrack-cron
+on:
+  schedule:
+    - cron: '*/14 * * * *'   # wake-up ping, every 14 min, all day
+    - cron: '0 17 * * *'     # daily job, 17:00 UTC = 1:00 AM PHT
+  workflow_dispatch: {}
+
+jobs:
+  wake:
+    if: github.event.schedule == '*/14 * * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render backend
+        run: curl --max-time 60 --retry 2 -sf https://subtrack-iq02.onrender.com/ || true
+
+  daily-billing:
+    if: github.event.schedule == '0 17 * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger daily billing update/notif job
+        run: curl --max-time 90 -sf https://subtrack-iq02.onrender.com/cron/daily-job -H "x-cron-secret: ${{ secrets.CRON_SECRET }}"
