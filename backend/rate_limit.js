@@ -26,4 +26,22 @@ const two_fa_limiter = rateLimit({
   skipSuccessfulRequests: true,
 });
 
-module.exports = { login_limiter, register_limiter, two_fa_limiter };
+const read_limiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 60, // 60 GET requests per minute
+  message: { message: 'Too many requests. Please slow down.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.user?.id || req.ip,
+});
+
+const write_limiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 20, // 20 create/update/delete requests per minute
+  message: { message: 'Too many requests. Please slow down.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.user?.id || req.ip,
+});
+
+module.exports = { login_limiter, register_limiter, two_fa_limiter, read_limiter, write_limiter };

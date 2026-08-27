@@ -4,7 +4,7 @@ const express = require('express')
 const cors = require('cors')
 const jwt = require('jsonwebtoken')
 const cookie_parser = require('cookie-parser')
-const { login_limiter, register_limiter, two_fa_limiter } = require('./rate_limit')
+const { login_limiter, register_limiter, two_fa_limiter, read_limiter, write_limiter } = require('./rate_limit')
 const bcrypt = require('bcrypt')
 const { send_forgot_verification_email, send_register_verification_email } = require('./mailer')
 const { get_or_set_cache, delete_cache } = require('./redis')
@@ -61,7 +61,7 @@ app.get('/cron/daily-job', async (req, res) => {
 // =============================== Routes =======================================
 
 // Check if currently logged in
-app.get('/me', token_auth, async (req, res)=>{res.status(200).json({id: req.user.id, name: req.user.name})})
+app.get('/me', token_auth, read_limiter, async (req, res)=>{res.status(200).json({id: req.user.id, name: req.user.name})})
 
 // Login route
 app.post('/login', login_limiter,async (req, res) => {
@@ -91,7 +91,7 @@ app.post('/login', login_limiter,async (req, res) => {
 })
 
 // Logout route
-app.get('/logout', token_auth, (req, res) => {
+app.get('/logout', token_auth, read_limiter, (req, res) => {
 	try {
 		res.clearCookie('token', {
 			httpOnly: true, 
@@ -233,7 +233,7 @@ app.put('/forgot/change_password', two_fa_limiter, async (req, res) => {
 })
 
 // Get subscription of current user
-app.post('/subscription', token_auth, async (req, res) => {
+app.post('/subscription', token_auth, write_limiter, async (req, res) => {
 	const { filter_category, filter_status } = req.body
 	if(typeof filter_status !== 'string') return res.status(400).json({ message: 'Invalid status.' })  
 	const month_name = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -285,7 +285,7 @@ app.post('/subscription', token_auth, async (req, res) => {
 })
 
 // Add subscription for current user
-app.post('/add/subscription', token_auth, async (req, res) => {
+app.post('/add/subscription', token_auth, write_limiter, async (req, res) => {
 	const { sub_name, sub_amount, sub_currency, sub_month, sub_day, sub_category_id, sub_duration } = req.body
 	
 	if(typeof sub_name !== 'string' || sub_name.trim().length === 0) return res.status(400).json({ message: 'Invalid name.' })  
@@ -347,7 +347,7 @@ app.post('/add/subscription', token_auth, async (req, res) => {
 })
 
 // Edit subscription of current user
-app.put('/edit/subscription', token_auth, async (req, res) => {
+app.put('/edit/subscription', token_auth, write_limiter, async (req, res) => {
 	const { sub_id, new_sub_name, new_sub_amount, new_sub_currency, new_sub_is_active, new_sub_month, new_sub_day, new_sub_category_id, new_sub_duration } = req.body 
 
 	if(typeof new_sub_name !== 'string' || new_sub_name.trim().length === 0) return res.status(400).json({ message: 'Invalid name.' })  
@@ -410,7 +410,7 @@ app.put('/edit/subscription', token_auth, async (req, res) => {
 })
 
 // Delete subscription of current user
-app.delete('/delete/subscription', token_auth, async (req, res) => {
+app.delete('/delete/subscription', token_auth, write_limiter, async (req, res) => {
 	const { subscription_id } = req.body
 	if(typeof subscription_id !== 'string' || subscription_id.trim().length === 0) return res.status(400).json({ message: 'Invalid subscription.' })  
 	
@@ -433,7 +433,7 @@ app.delete('/delete/subscription', token_auth, async (req, res) => {
 })
 
 // Get categories of current user
-app.get('/category', token_auth, async (req, res) => {
+app.get('/category', token_auth, read_limiter, async (req, res) => {
 	const cache_key = `categories:${req.user.id}`
 	try {
 		const categories = await get_or_set_cache(cache_key, 120, async ()=> {
@@ -444,7 +444,7 @@ app.get('/category', token_auth, async (req, res) => {
 })
 
 // Add category for current user
-app.post('/add/category', token_auth, async (req, res) => {
+app.post('/add/category', token_auth, write_limiter, async (req, res) => {
 	const { category_name, category_color } = req.body
 	if(typeof category_name !== 'string' || category_name.trim().length === 0) return res.status(400).json({ message: 'Invalid name.' })  
 	if(typeof category_color !== 'string' || category_color.trim().length === 0) return res.status(400).json({ message: 'Invalid color.' })  
@@ -470,7 +470,7 @@ app.post('/add/category', token_auth, async (req, res) => {
 })
 
 // Edit category of current user
-app.put('/edit/category', token_auth, async (req, res) => {
+app.put('/edit/category', token_auth, write_limiter, async (req, res) => {
 	const { category_id, new_category_name, new_category_color } = req.body
 
 	if(typeof category_id !== 'number' || category_id.length === 0) return res.status(400).json({ message: 'Invalid category.' })  
@@ -497,7 +497,7 @@ app.put('/edit/category', token_auth, async (req, res) => {
 })
 
 // Delete category of current user
-app.delete('/delete/category', token_auth, async (req, res) => {
+app.delete('/delete/category', token_auth, write_limiter, async (req, res) => {
 	const { category_id } = req.body
 	if(typeof category_id !== 'number' || category_id.length === 0) return res.status(400).json({ message: 'Invalid category.' })  
 
@@ -515,7 +515,7 @@ app.delete('/delete/category', token_auth, async (req, res) => {
 })
 
 // Get budget of current user
-app.get('/budget', token_auth, async (req, res) => {
+app.get('/budget', token_auth, read_limiter, async (req, res) => {
 	const cache_key = `budgets:${req.user.id}`
 	try {
 		const budgets = await get_or_set_cache(cache_key, 120, async ()=> {
@@ -526,7 +526,7 @@ app.get('/budget', token_auth, async (req, res) => {
 })
 
 // Add budget for current user
-app.post('/add/budget', token_auth, async (req, res) => {
+app.post('/add/budget', token_auth, write_limiter, async (req, res) => {
 	const { budget_amount, category_id, input_month_index, input_year, toggle } = req.body
 	
 	if(typeof budget_amount !== 'number' || budget_amount.length === 0) return res.status(400).json({ message: 'Invalid amount.' })  
@@ -561,7 +561,7 @@ app.post('/add/budget', token_auth, async (req, res) => {
 })
 
 // Edit budget of current user
-app.put('/edit/budget', token_auth, async (req, res) => {
+app.put('/edit/budget', token_auth, write_limiter, async (req, res) => {
 	const { budget_id, new_budget_amount, input_month_index, input_year } = req.body
 
 	if(typeof budget_id !== 'string' || budget_id.trim().length === 0) return res.status(400).json({ message: 'Invalid budget.' })  
@@ -590,7 +590,7 @@ app.put('/edit/budget', token_auth, async (req, res) => {
 })
 
 // Delete budget of current user
-app.delete('/delete/budget', token_auth, async (req, res) => {
+app.delete('/delete/budget', token_auth, write_limiter, async (req, res) => {
 	const { budget_to_delete, toggle, input_month_index, input_year } = req.body
 
 	if(typeof budget_to_delete !== 'string' || budget_to_delete.trim().length === 0) return res.status(400).json({ message: 'Invalid budget.' })  
@@ -625,7 +625,7 @@ app.delete('/delete/budget', token_auth, async (req, res) => {
 })
 
 // Get subscription history of current user
-app.post('/history', token_auth, async (req, res) => {
+app.post('/history', token_auth, write_limiter, async (req, res) => {
 	const { filter_category, filter_days } = req.body
 	if (typeof filter_days !== 'string') return res.status(400).json({ message: 'Invalid day.' })
 
@@ -704,7 +704,7 @@ app.post('/history', token_auth, async (req, res) => {
 })
 
 // Get notifications of current user
-app.get('/notification', token_auth, async (req, res) => {
+app.get('/notification', token_auth, read_limiter, async (req, res) => {
 	const month_name = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 	const cache_key = `notifications:${req.user.id}`
 	try {
@@ -738,7 +738,7 @@ app.get('/notification', token_auth, async (req, res) => {
 })
 
 // Get notifications of current user today
-app.get('/dashboard/notification/today', token_auth, async (req, res) => {
+app.get('/dashboard/notification/today', token_auth, read_limiter, async (req, res) => {
 	const month_name = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 	const today = new Date()
 	const today_start = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}T00:00:00.000Z`
@@ -770,7 +770,7 @@ app.get('/dashboard/notification/today', token_auth, async (req, res) => {
 })
 
 // Mark all notifications as read
-app.put('/notification/mark_all_as_read', token_auth, async (req, res)=> {
+app.put('/notification/mark_all_as_read', token_auth, write_limiter, async (req, res)=> {
 	try {
 		await prisma.notification.updateMany({
 			where: { user_id: req.user.id, is_read: false },
@@ -789,7 +789,7 @@ app.put('/notification/mark_all_as_read', token_auth, async (req, res)=> {
 })
 
 // Delete notification of current user
-app.delete('/delete/notification', token_auth, async (req, res) => {
+app.delete('/delete/notification', token_auth, write_limiter, async (req, res) => {
 	const { notification_id } = req.body
 	if(typeof notification_id !== 'string' || notification_id.trim().length === 0) return res.status(400).json({ message: 'Invalid notification.' })  
 	try {
@@ -804,7 +804,7 @@ app.delete('/delete/notification', token_auth, async (req, res) => {
 })
 
 // Get monthly spend
-app.get('/dashboard/monthly_spend', token_auth, async (req, res) => {
+app.get('/dashboard/monthly_spend', token_auth, read_limiter, async (req, res) => {
 	const cache_key = `monthly_spends:${req.user.id}`
 	try {
 		const result = await get_or_set_cache(cache_key, 120, async ()=> {
@@ -831,7 +831,7 @@ app.get('/dashboard/monthly_spend', token_auth, async (req, res) => {
 })
 
 // Get active subscriptions
-app.get('/dashboard/total/active_sub', token_auth, async (req, res) => {
+app.get('/dashboard/total/active_sub', token_auth, read_limiter, async (req, res) => {
 	const cache_key = `total_active_subs:${req.user.id}`
 	try {
 		const result = await get_or_set_cache(cache_key, 300, async ()=> {
@@ -847,7 +847,7 @@ app.get('/dashboard/total/active_sub', token_auth, async (req, res) => {
 })
 
 // Get total subs due in a week
-app.get('/dashboard/total/due_1_week', token_auth, async (req, res) => {
+app.get('/dashboard/total/due_1_week', token_auth, read_limiter, async (req, res) => {
 	// Date today YYYY-MM-DD (Start of day)
 	const today = new Date()
 	const t_year = today.getFullYear()
@@ -879,7 +879,7 @@ app.get('/dashboard/total/due_1_week', token_auth, async (req, res) => {
 })
 
 // Get total budget
-app.get('/dashboard/total/budget', token_auth, async (req, res) => {
+app.get('/dashboard/total/budget', token_auth, read_limiter, async (req, res) => {
 	const cache_key = `total_budget:${req.user.id}`
 	try {
 		const result = await get_or_set_cache(cache_key, 300, async ()=> {
@@ -906,7 +906,7 @@ app.get('/dashboard/total/budget', token_auth, async (req, res) => {
 })
 
 // Get budget left this month
-app.get('/dashboard/total/budget_left', token_auth, async (req, res) => {
+app.get('/dashboard/total/budget_left', token_auth, read_limiter, async (req, res) => {
    // Start of month
    const today = new Date();
    const today_year = today.getFullYear();
@@ -975,7 +975,7 @@ app.get('/dashboard/total/budget_left', token_auth, async (req, res) => {
 });
 
 // Get upcoming renewals
-app.get('/dashboard/renewals', token_auth, async (req, res) => {
+app.get('/dashboard/renewals', token_auth, read_limiter, async (req, res) => {
 	// Date today YYYY-MM-DD (Start of day)
 	const today = new Date()
 	const t_year = today.getFullYear()
@@ -1021,7 +1021,7 @@ app.get('/dashboard/renewals', token_auth, async (req, res) => {
 
 
 // Get active expenses by category
-app.post('/dashboard/category_spent', token_auth, async (req, res) => {
+app.post('/dashboard/category_spent', token_auth, write_limiter, async (req, res) => {
    const { toggle } = req.body
 
    if (!toggle) return res.status(400).json({ message: 'Currency is required.' })
@@ -1093,7 +1093,7 @@ app.post('/dashboard/category_spent', token_auth, async (req, res) => {
 })
 
 // Get categories with total count and amount of subs
-app.get('/category/category_summary', token_auth, async (req, res) => {
+app.get('/category/category_summary', token_auth, read_limiter, async (req, res) => {
 	const cache_key = `category_summary:${req.user.id}`
 	try {
 		const result = await get_or_set_cache(cache_key, 300, async ()=> {
@@ -1132,7 +1132,7 @@ app.get('/category/category_summary', token_auth, async (req, res) => {
 })
 
 // Get total budget with expenses
-app.post('/budget/budget_summary', token_auth, async (req, res)=> {
+app.post('/budget/budget_summary', token_auth, write_limiter, async (req, res)=> {
 	const { toggle, input_month_index, input_year } = req.body
 	if(typeof toggle !== 'string' || toggle.trim().length === 0) return res.status(400).json({ message: 'Invalid currency.' })  
 	if(typeof input_month_index !== 'number' || input_month_index.length === 0) return res.status(400).json({ message: 'Invalid month.' })  
@@ -1173,7 +1173,7 @@ app.post('/budget/budget_summary', token_auth, async (req, res)=> {
 })
 
 // Get categories, budget, and subs amount based on month
-app.post('/budget/category_budget', token_auth, async (req, res)=> {
+app.post('/budget/category_budget', token_auth, write_limiter, async (req, res)=> {
 	const { toggle, input_month_index, input_year } = req.body
 
 	if(typeof toggle !== 'string' || toggle.trim().length === 0) return res.status(400).json({ message: 'Invalid currency.' })  
