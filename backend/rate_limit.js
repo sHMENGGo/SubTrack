@@ -1,4 +1,4 @@
-const rateLimit = require('express-rate-limit');
+const {rateLimit, ipKeyGenerator} = require('express-rate-limit');
 
 const login_limiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
@@ -32,7 +32,7 @@ const read_limiter = rateLimit({
   message: { message: 'Too many requests. Please slow down.' },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.user?.id || req.ip,
+  keyGenerator: (req) => req.user?.id || ipKeyGenerator(req.ip)
 });
 
 const write_limiter = rateLimit({
@@ -41,7 +41,7 @@ const write_limiter = rateLimit({
   message: { message: 'Too many requests. Please slow down.' },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.user?.id || req.ip,
+  keyGenerator: (req) => req.user?.id || ipKeyGenerator(req.ip)
 });
 
 module.exports = { login_limiter, register_limiter, two_fa_limiter, read_limiter, write_limiter };
