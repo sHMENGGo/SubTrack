@@ -8,8 +8,9 @@ const { login_limiter, register_limiter, two_fa_limiter, read_limiter, write_lim
 const bcrypt = require('bcrypt')
 const { send_forgot_verification_email, send_register_verification_email } = require('./mailer')
 const { get_or_set_cache, delete_cache } = require('./redis')
-const is_production = process.env.NODE_ENV === 'production'
 require('dotenv').config()
+
+const is_production = process.env.NODE_ENV === 'production'
 
 // Prisma 
 const adapter = new PrismaPg({connectionString: process.env.DATABASE_URL})
