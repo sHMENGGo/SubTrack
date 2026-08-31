@@ -105,7 +105,7 @@ export default function Dashboard() {
             set_notifications(data.formatted_notifications)
          } catch (err: any) {
             toast.error(err.message)
-            console.log('Error getting total budget: ', err)
+            console.log('Error getting notifications today: ', err)
          }
       }; get_notifications()
    }, [])

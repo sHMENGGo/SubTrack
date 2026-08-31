@@ -65,7 +65,7 @@ app.get('/cron/daily-job', async (req, res) => {
 app.get('/me', token_auth, read_limiter, async (req, res)=>{res.status(200).json({id: req.user.id, name: req.user.name})})
 
 // Login route
-app.post('/login', login_limiter,async (req, res) => {
+app.post('/login', login_limiter, async (req, res) => {
 	const { email, password, remember_me } = req.body
 
 	if(typeof email !== 'string' || email.trim().length === 0) return res.status(400).json({ message: 'Invalid email or password.' })  
@@ -233,6 +233,17 @@ app.put('/forgot/change_password', two_fa_limiter, async (req, res) => {
 	}
 })
 
+// Get profile
+app.get('/profile', token_auth, read_limiter, async (req, res) => {
+	try {
+		const user = await prisma.user.findUnique({ where: { id: req.user.id } })
+		res.status(200).json({ name: user.name, email: user.email, password: user.password, message: 'Profile retrieved successfully.' })
+	} catch (error) {
+		console.log(error)
+		res.status(500).json({ message: 'Error retrieving profile.' })
+	}
+})
+
 // Get subscription of current user
 app.post('/subscription', token_auth, write_limiter, async (req, res) => {
 	const { filter_category, filter_status } = req.body
@@ -282,7 +293,8 @@ app.post('/subscription', token_auth, write_limiter, async (req, res) => {
 		res.status(200).json({ subscriptions: result.formatted_subs, message: 'Subscriptions retrieved successfully.' })
 	} catch (error) {
 		console.log(error)
-		res.status(500).json({ message: 'Error retrieving subscriptions.' })}
+		res.status(500).json({ message: 'Error retrieving subscriptions.' })
+	}
 })
 
 // Add subscription for current user
@@ -741,9 +753,12 @@ app.get('/notification', token_auth, read_limiter, async (req, res) => {
 // Get notifications of current user today
 app.get('/dashboard/notification/today', token_auth, read_limiter, async (req, res) => {
 	const month_name = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-	const today = new Date()
-	const today_start = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}T00:00:00.000Z`
-	const today_end = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate() + 1).padStart(2, '0')}T00:00:00.000Z`
+	
+	const today_start = new Date()
+	today_start.setHours(0, 0, 0, 0)
+
+	const today_end = new Date(today_start)
+	today_end.setDate(today_end.getDate() + 1) 
 	
 	const cache_key = `notifications_today:${req.user.id}`
 	try {
@@ -753,6 +768,7 @@ app.get('/dashboard/notification/today', token_auth, read_limiter, async (req, r
 				include: { subscription: true },
 				orderBy: { notify_at: 'desc' }
 			})
+			console.log(notifications || [])
 			const formatted_notifications = notifications.map(notif => ({
 				...notif, 
 				amount: Number(notif.subscription.amount).toFixed(2),
@@ -765,8 +781,8 @@ app.get('/dashboard/notification/today', token_auth, read_limiter, async (req, r
 
 		res.status(200).json({ formatted_notifications: result.formatted_notifications })
 	} catch (error) {
-		console.error('Error retrieving notifications: ', error)
-		res.status(500).json({ message: 'Error retrieving notifications.' })
+		console.error('Error retrieving notifications today: ', error)
+		res.status(500).json({ message: 'Error retrieving notifications today.' })
 	}
 })
 
