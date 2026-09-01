@@ -17,7 +17,7 @@ A personal subscription tracker web app for monitoring recurring payments. SubTr
    **Backend**
    - Node.js + Express
    - JWT auth (`jsonwebtoken`, `cookie-parser`)
-   - `node-cron` for scheduled jobs (billing cycle advancement, notifications)
+   - Github actions for scheduled jobs (billing cycle advancement, notifications)
    - Run via `tsx` (required, since the Prisma client output is TypeScript)
 
    **Database**
@@ -40,8 +40,6 @@ A personal subscription tracker web app for monitoring recurring payments. SubTr
 ## Multi-currency support
 
    SubTrack supports PHP and USD as fully separate currencies. Amounts are never summed or converted between them — instead, use the PHP/USD toggle to switch views.
-
-
 
 ## Prerequisites
 
@@ -98,7 +96,7 @@ A personal subscription tracker web app for monitoring recurring payments. SubTr
    ```bash
    # Backend (from /server)
    cd backend
-   npm start
+   npm run dev
 
    # Frontend (from /client)
    cd frontend
@@ -111,7 +109,7 @@ A personal subscription tracker web app for monitoring recurring payments. SubTr
 
    - **Start: July 25, 2026**
 
-   - **July 26-27:** Server development using Express framework and Prisma ORM. REST API,    JWT, Authentication, Authorization. Postgre database setup.
+   - **July 26-27:** Server development using Express framework and Prisma ORM. REST API, JWT, Authentication, Authorization. Postgre database setup.
 
    - **Aug 05:** Developed login, register, dashboard, subscription, and category pages.
 
@@ -120,6 +118,7 @@ A personal subscription tracker web app for monitoring recurring payments. SubTr
    - **Aug 09:** Developed History page. history based on category and days ago.
 
    - **Aug 10:** Paused.
+
    - **Aug 15:** Resumed.
 
    - **Aug 16:** Developed MFA using gmail, password hashing, server input validation, and API rate limiter. Fixed duplications of subscriptions and categories.
@@ -127,3 +126,9 @@ A personal subscription tracker web app for monitoring recurring payments. SubTr
    - **Aug 17:** Setup upstash redis.
 
    - **Aug 18:** Developed forgot password feature and responsiveness to screen sizes.
+
+   - **Aug 21:** Paused.
+   
+   - **Aug 29:** Resumed.
+
+   - **Sept 01:** Developed edit profile feature.
