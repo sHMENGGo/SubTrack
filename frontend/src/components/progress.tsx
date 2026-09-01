@@ -39,7 +39,7 @@ export default function Progress({
          {/* Progress */}
          <div className="w-full h-2 bg-(--surface-1) rounded-full relative">
             <div 
-               className={`${bar_width < 75 ? 'bg-(--fill-accent)' : 'bg(--fill-warning)'} ${bar_width >= 100 ? 'bg-(--fill-danger)' : ''} absolute h-2 rounded-full transition-all duration-500`} 
+               className={`${bar_width > 0 && bar_width <= 25 ? 'bg-(--fill-safe)' : bar_width > 25 && bar_width <= 50 ? 'bg-(--fill-accent)' : bar_width >= 50 && bar_width <= 75 ? 'bg-(--fill-warning)' : bar_width > 75 ? 'bg-(--fill-danger)' : ''} absolute h-2 rounded-full transition-all duration-500`} 
                style={{ width: `${bar_width > 100 ? 100 : bar_width}%` }}
             ></div>
          </div>

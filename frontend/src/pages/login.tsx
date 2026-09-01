@@ -223,7 +223,7 @@ export default function Login() {
                      </label>
                      <p onClick={(e: any)=> forgot_send_code(e)}  className=" text-xs md:text-sm font-semibold text-(--fill-accent) hover:text-blue-400 active:text-(--fill-accent) cursor-pointer transition-colors">{sending_forgot_code ? 'Sending Code...' : 'Forgot Password?'}</p>
                   </div>
-                  <button type="submit"  className="w-full mt-2 bg-blue-700 text-(--text-primary) font-semibold py-2.5 rounded-lg hover:bg-blue-500 active:bg-slate-950 transition-all duration-200 text-xs" >{loading ? 'Signing in...' : 'Sign in'}</button>
+                  <button type="submit"  className="w-full mt-2 bg-(--fill-accent) text-(--text-primary) font-semibold py-2.5 rounded-lg hover:bg-blue-500 active:bg-(--fill-accent) transition-all duration-200 text-xs" >{loading ? 'Signing in...' : 'Sign in'}</button>
                </form>
                <p className="text-center text-xs text-(--text-muted) mt-8 flex justify-center flex-nowrap" >Don't have an account?<span onClick={()=> {set_show_form('register'); clear_reg_input()}}  className="font-semibold text-blue-700 hover:text-blue-500 transition-colors ml-1 cursor-pointer" >Register here</span></p>
             </section>

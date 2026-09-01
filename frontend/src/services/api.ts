@@ -16,7 +16,7 @@ export async function custom_fetch(endpoint: string, options: RequestInit = {}) 
   // Automatically throw an error
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || 'Something went wrong');
+    throw new Error(errorData.message || 'Something went wrong.');
   }
 
   return response.json();

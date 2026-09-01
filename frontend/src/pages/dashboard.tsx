@@ -174,7 +174,7 @@ export default function Dashboard() {
                      <h1 className="text-lg" >Spend by Category</h1>
                      {/* Toggle button */}
                      <div onClick={()=> set_toggle(toggle === 'PHP' ? 'USD' : 'PHP')}  className="p-1 px-3 gap-6 rounded-full bg-(--surface-1) flex items-center justify-around relative cursor-pointer" >
-                        <div className={` ${toggle === 'PHP' ? 'left-[1%]' : 'left-[48%]'} bg-blue-900 w-1/2 h-9/10 absolute rounded-full transition-all`} ></div>
+                        <div className={` ${toggle === 'PHP' ? 'left-[1%]' : 'left-[48%]'} bg-(--fill-accent) w-1/2 h-9/10 absolute rounded-full transition-all`} ></div>
                         <h1 className="z-10 text-sm" >PHP</h1>
                         <h1 className="z-10 text-sm" >USD</h1>
                      </div>

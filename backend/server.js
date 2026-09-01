@@ -244,6 +244,37 @@ app.get('/profile', token_auth, read_limiter, async (req, res) => {
 	}
 })
 
+// Edit profile
+app.put('/edit/profile', token_auth, write_limiter, async (req, res) => {
+	const { new_name, new_email, current_password, new_password } = req.body
+	
+	if(typeof new_name !== 'string') return res.status(400).json({ message: 'Invalid name.' })  
+	if(typeof new_email !== 'string') return res.status(400).json({ message: 'Invalid email.' })  
+	if(typeof new_password !== 'string') return res.status(400).json({ message: 'Invalid password.' })  
+	
+	try {
+		const user = await prisma.user.findUnique({ where: { id: req.user.id } })
+		const password_match = user && await bcrypt.compare(current_password, user.password)
+		if(!password_match) return res.status(401).json({ message: 'Invalid current password.' })
+		else {
+			const new_password_hash = await bcrypt.hash(new_password, 11)
+			await prisma.user.update({
+				where: { id: req.user.id },
+				data: {
+					name: new_name,
+					email: new_email,
+					password: new_password_hash
+				}
+			})
+		}
+
+		res.status(200).json({ message: 'Profile edited successfully.' })
+	} catch (error) {
+		console.log(error)
+		res.status(500).json({ message: 'Error editing profile.' })
+	}
+})
+
 // Get subscription of current user
 app.post('/subscription', token_auth, write_limiter, async (req, res) => {
 	const { filter_category, filter_status } = req.body
@@ -768,7 +799,6 @@ app.get('/dashboard/notification/today', token_auth, read_limiter, async (req, r
 				include: { subscription: true },
 				orderBy: { notify_at: 'desc' }
 			})
-			console.log(notifications || [])
 			const formatted_notifications = notifications.map(notif => ({
 				...notif, 
 				amount: Number(notif.subscription.amount).toFixed(2),

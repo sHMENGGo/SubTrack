@@ -20,10 +20,14 @@ export default function Header() {
          const data = await custom_fetch('logout')
          navigate('/login')
          toast.success(data.message)
-      } catch(err) {console.log('Error logout: ', err)}
+      } catch(err: any) {
+         toast.error(err.message)
+         console.log('Error logout: ', err)
+      }
       finally {set_loading(false)}
    }
 
+   // Notification color and icon based on urgency
    const type_color:any = {
       ONE_WEEK_BEFORE: 'text-(--fill-accent)',
       THREE_DAYS_BEFORE: 'text-(--fill-safe)',
@@ -45,7 +49,10 @@ export default function Header() {
          const data = await custom_fetch('notification')
          set_notifications(data.formatted_notifications)
          set_notif_count(data.notif_count)
-      } catch (error) {console.log('Error getting notifications: ', error)}
+      } catch (err: any) {
+         toast.error(err.message)
+         console.log('Error getting notifications: ', err)
+      }
    }
    useEffect(()=> { get_notifications() }, [])
 
@@ -57,32 +64,64 @@ export default function Header() {
          const data = await custom_fetch('notification/mark_all_as_read', { method: 'PUT' })
          await get_notifications() // single, deliberate refetch — no race
          console.log(data.message)
-      } catch (error) {console.log('Error marking all notifications as read: ', error)}
+      } catch (err: any) {
+         toast.error(err.message)
+         console.log('Error marking all notifications as read: ', err)
+      }
       finally {set_marking_all(false)}
    }
 
    // Menu for mobile screen
    const[show_menu, set_show_menu] = useState(false)
 
-   // Profile
-   const[show_password, set_show_password] = useState(false)
+   // Get current credentials
    const[name, set_name] = useState('')
    const[email, set_email] = useState('')
-   const[current_password, set_current_password] = useState('')
-   const[new_password, set_new_password] = useState('')
+   const[edit_profile, set_edit_profile] = useState(false)
    useEffect(()=> {
       const get_profile = async ()=> {
          try {
             const data = await custom_fetch('profile')
             set_name(data.name)
             set_email(data.email)
-         } catch (error) {console.log('Error marking all notifications as read: ', error)}
+         } catch (err: any) {
+            toast.error(err.message)
+            console.log('Error marking all notifications as read: ', err)
+         }
       }
       get_profile()
-   }, [])
+   }, [edit_profile])
 
    // Edit profile
-   const[edit_profile, set_edit_profile] = useState(false)
+   const[show_password, set_show_password] = useState(false)
+   const[new_name, set_new_name] = useState('')
+   const[new_email, set_new_email] = useState('')
+   const[current_password, set_current_password] = useState('')
+   const[new_password, set_new_password] = useState('')
+   const[saving_changes, set_saving_changes] = useState(false)
+   useEffect(()=> {
+      set_new_name(name)
+      set_new_email(email)
+   }, [name, email, show_popup])
+   const save_profile = async (e: any)=> {
+      e.preventDefault()
+      set_saving_changes(true)
+      try {
+         const data = await custom_fetch('edit/profile', {
+            method: 'PUT',
+            body: JSON.stringify({ new_name, new_email, current_password, new_password })
+         })
+         toast.success(data.message)
+         set_edit_profile(false)
+      } catch (err: any) {
+         toast.error(err.message)
+         console.log('Error editing profile: ', err)
+      } finally { 
+         set_saving_changes(false) 
+         set_current_password('')
+         set_new_password('')
+      }
+   }
 
 
    return (
@@ -95,10 +134,12 @@ export default function Header() {
          {/* Mobile */}
          {window.innerWidth < 768 && (
             <section className="flex gap-2 items-center" >
+               <FontAwesomeIcon icon={faUser} onClick={()=> {set_show_popup(prev => prev === 'profile' ? '' : 'profile'); set_edit_profile(false)}}  className="text-(--text-primary) text-lg cursor-pointer hover:text-(--text-secondary) active:text-(--text-primary) " />
                <div className="relative" >
                   {notif_count !== 0 && (<h1 className="absolute text-sm md:text-md lg:text-lg -right-2 -top-2 p-[0.2rem] rounded-full bg-(--fill-danger) " >{notif_count}</h1>)}
                   <FontAwesomeIcon icon={faBell} onClick={()=> set_show_popup(prev => prev === 'notif' ? '' : 'notif')}  className="text-(--text-primary) text-xl cursor-pointer hover:text-(--text-secondary) active:text-(--text-primary) " />
                </div>
+
                <FontAwesomeIcon onClick={()=> set_show_menu(prev => !prev)} icon={faBars} className="text-(--text-primary) text-2xl cursor-pointer active:text-(--text-secondary) " />
                {show_menu && (
                   <div className="absolute right-0 top-15 w-2/3 border border-(--border) bg-(--surface-1) flex flex-col gap-3 rounded text-(--text-primary) p-2 *:border-b *:border-(--border) *:p-1 z-50" >
@@ -121,7 +162,7 @@ export default function Header() {
                <button onClick={()=> navigate('/category', {replace: true})}  className="text-(--text-primary) hover:text-(--text-secondary) transition-colors duration-200" >Category</button>
                <button onClick={()=> navigate('/budget', {replace: true})}  className="text-(--text-primary) hover:text-(--text-secondary) transition-colors duration-200" >Budget</button>
                <button onClick={()=> navigate('/history', {replace: true})}  className="text-(--text-primary) hover:text-(--text-secondary) transition-colors duration-200" >History</button>
-               <FontAwesomeIcon icon={faUser} onClick={()=> set_show_popup(prev => prev === 'profile' ? '' : 'profile')}  className="text-(--text-primary) text-lg cursor-pointer hover:text-(--text-secondary) active:text-(--text-primary) " />
+               <FontAwesomeIcon icon={faUser} onClick={()=> {set_show_popup(prev => prev === 'profile' ? '' : 'profile'); set_edit_profile(false)}}  className="text-(--text-primary) text-lg cursor-pointer hover:text-(--text-secondary) active:text-(--text-primary) " />
                <div className="relative" >
                   {notif_count !== 0 && (<h1 className="absolute text-[0.8rem] -right-2 -top-2 px-2 rounded-full bg-(--fill-danger) " >{notif_count}</h1>)}
                   <FontAwesomeIcon icon={faBell} onClick={()=> set_show_popup(prev => prev === 'notif' ? '' : 'notif')}  className="text-(--text-primary) text-lg cursor-pointer hover:text-(--text-secondary) active:text-(--text-primary) " />
@@ -171,31 +212,53 @@ export default function Header() {
             </section>
          )}
 
-         {/* Show email and password */}
+         {/* Show profile email and password for edit */}
          {show_popup === 'profile' && (
-            <section className="absolute w-9/10 md:w-1/3 flex flex-col border border-(--border) bg-(--surface-1) rounded-lg right-4 top-16 gap-4 overflow-y-auto overflow-x-hidden z-50 p-4 items-center" >
+            <section className="absolute w-9/10 md:w-2/5 flex flex-col border border-(--border) bg-(--surface-1) rounded-lg right-4 top-16 gap-4 overflow-y-auto overflow-x-hidden z-50 p-4 items-center" >
                <h1 className="text-xl" >Profile</h1>
-               <div className="flex flex-col gap-4" >
+               <div className="flex flex-col md:flex-row justify-center flex-wrap gap-4" >
                   {/* Current name */}
                   <div>
                      <label htmlFor="name" className="block text-xs font-medium text-(--text-muted) mb-1.5" >Name</label>
-                     <input type="text" id="name" value={name} disabled={true} onChange={(e) => set_name(e.target.value)}  className="w-full px-4 py-2.5 rounded-lg text-xs" />
+                     <input type="text" id="name" value={new_name} disabled={!edit_profile} onChange={(e) => set_name(e.target.value)}  className={` ${edit_profile ? 'opacity-100' : 'opacity-50'} w-full px-4 py-2.5 rounded-lg text-xs`} />
                   </div>
+
                   {/* Current email */}
                   <div>
                      <label htmlFor="email" className="block text-xs font-medium text-(--text-muted) mb-1.5" >Email</label>
-                     <input type="email" id="email" value={email} disabled={true} onChange={(e) => set_email(e.target.value)}  className="w-full px-4 py-2.5 rounded-lg text-xs" />
+                     <input type="email" id="email" value={new_email} disabled={!edit_profile} onChange={(e) => set_email(e.target.value)}  className={` ${edit_profile ? 'opacity-100' : 'opacity-50'} w-full px-4 py-2.5 rounded-lg text-xs`} />
                   </div>
+                
+                  {/* Current password */}
+                  {edit_profile && (
+                     <div className='relative' >
+                        <label htmlFor="password" className="block text-xs font-medium text-(--text-muted) mb-1.5" >Current Password</label>
+                        <input type={show_password ? 'text' : 'password'} id="password" value={current_password} onChange={(e) => set_current_password(e.target.value)}  className="w-full px-4 py-2.5 rounded-lg text-xs" />
+                        {show_password ? (
+                           <FontAwesomeIcon icon={faEye} onClick={()=> set_show_password(false)}  className='text-(--text-muted) text-xs absolute right-2 top-[55%] cursor-pointer hover:text-(--text-secondary) ' />
+                        ) : (
+                           <FontAwesomeIcon icon={faEyeSlash} onClick={()=> set_show_password(true)}  className='text-(--text-muted) text-xs absolute right-2 top-[55%] cursor-pointer hover:text-(--text-secondary) ' />
+                        )}
+                     </div>
+                  )}
+
                   {/* New password */}
-                  <div className='relative' >
-                     <label htmlFor="password" className="block text-xs font-medium text-(--text-muted) mb-1.5" >Current Password</label>
-                     <input type={show_password ? 'text' : 'password'} id="password" value={current_password} onChange={(e) => set_current_password(e.target.value)}  className="w-full px-4 py-2.5 rounded-lg text-xs" />
-                     {show_password ? (
-                        <FontAwesomeIcon icon={faEye} onClick={()=> set_show_password(false)}  className='text-(--text-muted) text-xs absolute right-2 top-[55%] cursor-pointer hover:text-(--text-secondary) ' />
-                     ) : (
-                        <FontAwesomeIcon icon={faEyeSlash} onClick={()=> set_show_password(true)}  className='text-(--text-muted) text-xs absolute right-2 top-[55%] cursor-pointer hover:text-(--text-secondary) ' />
-                     )}
-                  </div>
+                  {edit_profile && (
+                     <div className='relative' >
+                        <label htmlFor="password" className="block text-xs font-medium text-(--text-muted) mb-1.5" >New Password</label>
+                        <input type={show_password ? 'text' : 'password'} id="password" value={new_password} onChange={(e) => set_new_password(e.target.value)}  className="w-full px-4 py-2.5 rounded-lg text-xs" />
+                        {show_password ? (
+                           <FontAwesomeIcon icon={faEye} onClick={()=> set_show_password(false)}  className='text-(--text-muted) text-xs absolute right-2 top-[55%] cursor-pointer hover:text-(--text-secondary) ' />
+                        ) : (
+                           <FontAwesomeIcon icon={faEyeSlash} onClick={()=> set_show_password(true)}  className='text-(--text-muted) text-xs absolute right-2 top-[55%] cursor-pointer hover:text-(--text-secondary) ' />
+                        )}
+                     </div>
+                  )}
+
+                  {edit_profile && ( <button onClick={(e)=> save_profile(e)}  className="w-full mt-2 bg-(--fill-safe) text-(--text-primary) font-semibold py-2.5 rounded-lg hover:bg-green-400 active:bg-(--fill-safe) transition-all duration-200 text-xs" >{saving_changes ? 'Saving Changes...' : 'Save Changes'}</button> )}
+                  <button onClick={()=> set_edit_profile(!edit_profile)}  className="w-full mt-2 bg-blue-700 text-(--text-primary) font-semibold py-2.5 rounded-lg hover:bg-blue-500 active:bg-blue-700 transition-all duration-200 text-xs" >{edit_profile ? 'Cancel' : 'Edit'}</button>
+                  
+                  
                </div>
             </section>
          )}
