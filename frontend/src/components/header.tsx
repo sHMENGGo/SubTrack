@@ -71,9 +71,6 @@ export default function Header() {
       finally {set_marking_all(false)}
    }
 
-   // Menu for mobile screen
-   const[show_menu, set_show_menu] = useState(false)
-
    // Get current credentials
    const[name, set_name] = useState('')
    const[email, set_email] = useState('')
@@ -140,14 +137,14 @@ export default function Header() {
                   <FontAwesomeIcon icon={faBell} onClick={()=> set_show_popup(prev => prev === 'notif' ? '' : 'notif')}  className="text-(--text-primary) text-xl cursor-pointer hover:text-(--text-secondary) active:text-(--text-primary) " />
                </div>
 
-               <FontAwesomeIcon onClick={()=> set_show_menu(prev => !prev)} icon={faBars} className="text-(--text-primary) text-2xl cursor-pointer active:text-(--text-secondary) " />
-               {show_menu && (
+               <FontAwesomeIcon onClick={()=> set_show_popup(prev => prev === 'menu' ? '' : 'menu')} icon={faBars} className="text-(--text-primary) text-2xl cursor-pointer active:text-(--text-secondary) " />
+               {show_popup === 'menu' && (
                   <div className="absolute right-0 top-15 w-2/3 border border-(--border) bg-(--surface-1) flex flex-col gap-3 rounded text-(--text-primary) p-2 *:border-b *:border-(--border) *:p-1 z-50" >
-                     <button onClick={()=> {navigate('/dashboard', {replace: true}); set_show_menu(false)}}  className="text-(--text-primary) hover:text-(--text-secondary) transition-colors duration-200" >Dashboard</button>
-                     <button onClick={()=> {navigate('/subscription', {replace: true}); set_show_menu(false)}}  className="text-(--text-primary) hover:text-(--text-secondary) transition-colors duration-200" >Subscription</button>
-                     <button onClick={()=> {navigate('/category', {replace: true}); set_show_menu(false)}}  className="text-(--text-primary) hover:text-(--text-secondary) transition-colors duration-200" >Category</button>
-                     <button onClick={()=> {navigate('/budget', {replace: true}); set_show_menu(false)}}  className="text-(--text-primary) hover:text-(--text-secondary) transition-colors duration-200" >Budget</button>
-                     <button onClick={()=> {navigate('/history', {replace: true}); set_show_menu(false)}}  className="text-(--text-primary) hover:text-(--text-secondary) transition-colors duration-200" >History</button>
+                     <button onClick={()=> {navigate('/dashboard', {replace: true}); set_show_popup('')}}  className="text-(--text-primary) hover:text-(--text-secondary) transition-colors duration-200" >Dashboard</button>
+                     <button onClick={()=> {navigate('/subscription', {replace: true}); set_show_popup('')}}  className="text-(--text-primary) hover:text-(--text-secondary) transition-colors duration-200" >Subscription</button>
+                     <button onClick={()=> {navigate('/category', {replace: true}); set_show_popup('')}}  className="text-(--text-primary) hover:text-(--text-secondary) transition-colors duration-200" >Category</button>
+                     <button onClick={()=> {navigate('/budget', {replace: true}); set_show_popup('')}}  className="text-(--text-primary) hover:text-(--text-secondary) transition-colors duration-200" >Budget</button>
+                     <button onClick={()=> {navigate('/history', {replace: true}); set_show_popup('')}}  className="text-(--text-primary) hover:text-(--text-secondary) transition-colors duration-200" >History</button>
                      <button onClick={()=> {set_show_popup(prev => prev === 'logout' ? '' : 'logout')}}  className="text-(--text-primary) hover:text-(--text-secondary) transition-colors duration-200" ><FontAwesomeIcon icon={faRightFromBracket} /> Logout</button>
                   </div>
                )}
@@ -257,8 +254,6 @@ export default function Header() {
 
                   {edit_profile && ( <button onClick={(e)=> save_profile(e)}  className="w-full mt-2 bg-(--fill-safe) text-(--text-primary) font-semibold py-2.5 rounded-lg hover:bg-green-400 active:bg-(--fill-safe) transition-all duration-200 text-xs" >{saving_changes ? 'Saving Changes...' : 'Save Changes'}</button> )}
                   <button onClick={()=> set_edit_profile(!edit_profile)}  className="w-full mt-2 bg-blue-700 text-(--text-primary) font-semibold py-2.5 rounded-lg hover:bg-blue-500 active:bg-blue-700 transition-all duration-200 text-xs" >{edit_profile ? 'Cancel' : 'Edit'}</button>
-                  
-                  
                </div>
             </section>
          )}

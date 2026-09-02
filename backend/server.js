@@ -785,11 +785,11 @@ app.get('/notification', token_auth, read_limiter, async (req, res) => {
 app.get('/dashboard/notification/today', token_auth, read_limiter, async (req, res) => {
 	const month_name = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 	
-	const today_start = new Date()
-	today_start.setHours(0, 0, 0, 0)
+	today_start_string = new Date().toISOString().split('T')[0] + 'T00:00:00.000Z'
+	const today_start = new Date(today_start_string)
 
-	const today_end = new Date(today_start)
-	today_end.setDate(today_end.getDate() + 1) 
+	today_end_string = new Date().toISOString().split('T')[0] + 'T23:59:59.999Z'
+	const today_end = new Date(today_end_string)
 	
 	const cache_key = `notifications_today:${req.user.id}`
 	try {
@@ -799,6 +799,7 @@ app.get('/dashboard/notification/today', token_auth, read_limiter, async (req, r
 				include: { subscription: true },
 				orderBy: { notify_at: 'desc' }
 			})
+
 			const formatted_notifications = notifications.map(notif => ({
 				...notif, 
 				amount: Number(notif.subscription.amount).toFixed(2),
