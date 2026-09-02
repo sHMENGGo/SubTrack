@@ -106,13 +106,13 @@ export default function Category() {
    return (
       <main className="flex gap-4 w-full h-full flex-wrap" >
          {/* Add category button */}
-         <div onClick={()=> set_show_add_category(true)}  className="flex flex-col justify-center items-center w-fit min-w-2xs p-4 rounded-lg bg-(--surface-2) border border-(--border) cursor-pointer hover:bg-(--surface-1) active:ring-2 ring-blue-950 "  >
+         <div onClick={()=> set_show_add_category(true)}  className="flex flex-col justify-center items-center w-full md:w-2/9 p-4 rounded-lg bg-(--surface-2) border border-(--border) cursor-pointer hover:bg-(--surface-1) active:ring-2 ring-blue-950 "  >
             <h2 className="text-5xl" >+</h2>
             <h2 className="text-sm" >Add Category</h2>
          </div>
          {/* Category cards */}
          {category_summary.length !== 0 ? category_summary.map((cat: any) => (
-            <div key={cat.id} className="flex flex-col gap-2 w-fit min-w-2xs p-4 rounded-lg bg-(--surface-2) border border-(--border) " >
+            <div key={cat.id} className="flex flex-col gap-2 w-full md:w-2/9 p-4 rounded-lg bg-(--surface-2) border border-(--border) " >
                <div style={{ background: cat.color_hex }}  className="w-full h-6 rounded bg-blue-900" ></div>
                <h1 className="text-lg" >{cat.name}</h1>
                <h2 className="text-sm" >{cat.subs_count} Subs</h2>
