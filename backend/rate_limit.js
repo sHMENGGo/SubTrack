@@ -27,8 +27,8 @@ const two_fa_limiter = rateLimit({
 });
 
 const read_limiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 300, // 120 GET requests per minute
+  windowMs: 30 * 1000, // 30 seconds
+  max: 600, // 600 GET requests per 30 seconds
   message: { message: 'Too many requests. Please slow down.' },
   standardHeaders: true,
   legacyHeaders: false,
