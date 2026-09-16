@@ -283,7 +283,7 @@ export default function Login() {
                <form onSubmit={forgot_verify_code} onClick={(e)=> e.stopPropagation()}  className="w-full max-w-md bg-(--surface-1) rounded-xl p-8 gap-2 flex flex-col items-center" >
                   <h1 className='text-xl font-semibold' >Recover Account</h1><br />
                   <h1 className='text-center text-sm' >Input 6 digit verification code sent to <br /> {email_to_change_pass}</h1>
-                  <input type="text" maxLength={6} value={forgot_code} onChange={(e) => set_forgot_code(e.target.value)} required  className="px-4 py-2.5 rounded-lg text-center tracking wider tracking-widest text-sm " />
+                  <input type="text" maxLength={6} value={forgot_code} onChange={(e) => set_forgot_code(e.target.value)} required  className="px-4 py-2.5 rounded-lg text-center tracking-[0.4rem] text-sm " />
                   <p className='text-(--text-primary) text-xs ' >Didn't receive the code? <span onClick={(e: any)=> forgot_send_code(e)}  className='text-(--fill-accent) active:text-(--fill-accent) cursor-pointer hover:text-blue-400  ' >{sending_forgot_code ? 'Resending...' : 'Resend'}</span></p>
                   <button type="submit"  className="px-4 py-2.5 outline-none active:bg-blue-700 mt-4 rounded-lg bg-blue-900 text-(--text-primary) hover:bg-blue-800 transition-colors text-sm" >{forogt_code_verifying ? 'Verifying...' : 'Verify'}</button>
                </form>
