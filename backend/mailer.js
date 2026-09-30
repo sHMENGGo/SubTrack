@@ -1,31 +1,22 @@
-const nodemailer = require('nodemailer')
-const dns = require('node:dns').promises
 require('dotenv').config()
 
-let cachedIPv4Transporter = null
-let cachedAt = 0
-
-async function getTransporter() {
-   if (cachedIPv4Transporter && Date.now() - cachedAt < 10 * 60 * 1000) {
-      return cachedIPv4Transporter
-   }
-
-   const { address: ipv4 } = await dns.lookup('smtp.gmail.com', { family: 4 })
-
-   cachedIPv4Transporter = nodemailer.createTransport({
-      host: ipv4,
-      port: 465,
-      secure: true,
-      tls: {
-         servername: 'smtp.gmail.com'
-      },
-      auth: {
-         user: process.env.GMAIL_USER,
-         pass: process.env.GMAIL_APP_PASSWORD
-      }
+async function send_email({ to, subject, html }) {
+   const response = await fetch(process.env.GMAIL_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+         secret: process.env.GMAIL_SCRIPT_SECRET,
+         to,
+         subject,
+         html
+      })
    })
-   cachedAt = Date.now()
-   return cachedIPv4Transporter
+
+   const result = await response.json().catch(() => ({}))
+
+   if (!response.ok || !result.ok) {
+      throw new Error(`Email relay error: ${result.message || response.status}`)
+   }
 }
 
 function buildEmailHTML({ heading, message, code, footer }) {
@@ -62,9 +53,7 @@ function buildEmailHTML({ heading, message, code, footer }) {
 }
 
 async function send_register_verification_email(reg_email, code) {
-   const transporter = await getTransporter()
-   await transporter.sendMail({
-      from: `SubTrack <${process.env.GMAIL_USER}>`,
+   await send_email({
       to: reg_email,
       subject: 'Verify your SubTrack account',
       html: buildEmailHTML({
@@ -77,9 +66,7 @@ async function send_register_verification_email(reg_email, code) {
 }
 
 async function send_forgot_verification_email(email_db, code) {
-   const transporter = await getTransporter()
-   await transporter.sendMail({
-      from: `SubTrack <${process.env.GMAIL_USER}>`,
+   await send_email({
       to: email_db,
       subject: 'Reset your password',
       html: buildEmailHTML({
