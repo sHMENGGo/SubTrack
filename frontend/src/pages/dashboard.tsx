@@ -153,7 +153,7 @@ export default function Dashboard() {
             {/* Left half */}
             <div className="flex flex-col md:col-span-3 gap-4">
                {/* Renewals */}
-               <div className="bg-(--surface-2) rounded-lg p-4 border border-(--border) gap-3 flex flex-col">
+               <div className="bg-(--surface-2) rounded-lg p-4 border max-h-55 overflow-hidden border-(--border) gap-3 flex flex-col">
                   <h1 className="text-lg">Upcoming Renewals</h1>
                   {renewals.length !== 0 ? renewals.map(renewal => (
                      <div key={renewal.id} className="flex items-center border-b p-1 border-(--border) relative" >

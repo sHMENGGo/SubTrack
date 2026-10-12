@@ -31,7 +31,7 @@ A personal subscription tracker web app for monitoring recurring payments. SubTr
    - **Categories** — organize subscriptions by category
    - **Budget** — set and monitor monthly budgets per category
    - **History** — view past billing/payment history
-   - **Notifications** — a header bell popup with renewal alerts:
+   - **Notifications** — a header bell with renewal alerts:
    - 🔵 One week before
    - 🟢 Three days before
    - 🟡 One day before

@@ -28,8 +28,8 @@ const two_fa_limiter = rateLimit({
 
 const read_limiter = rateLimit({
   windowMs: 30 * 1000, // 30 seconds
-  max: 600, // 600 GET requests per 30 seconds
-  message: { message: 'Too many requests. Please slow down.' },
+  max: 120, // 120 GET requests per 30 seconds
+  message: { message: 'Too many read requests. Please slow down.' },
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => req.user?.id || ipKeyGenerator(req.ip)
@@ -38,7 +38,7 @@ const read_limiter = rateLimit({
 const write_limiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 20, // 20 create/update/delete requests per minute
-  message: { message: 'Too many requests. Please slow down.' },
+  message: { message: 'Too many write requests. Please slow down.' },
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => req.user?.id || ipKeyGenerator(req.ip)

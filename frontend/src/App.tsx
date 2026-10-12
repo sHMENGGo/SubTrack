@@ -7,6 +7,7 @@ import Subscription from "./pages/subscription"
 import Category from "./pages/category"
 import Budget from "./pages/budget"
 import History from "./pages/history"
+import Profile from "./pages/profile"
 import Toaster from "./components/toaster"
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
 						<Route path="/category" element={<Category />} />
 						<Route path="/budget" element={<Budget />} />
 						<Route path="/history" element={<History />} />
+						<Route path="/profile" element={<Profile />} />
 					</Route>
 				</Routes>
 			</BrowserRouter>

@@ -131,7 +131,7 @@ export default function Header() {
          {/* Mobile */}
          {window.innerWidth < 768 && (
             <section className="flex gap-2 items-center" >
-               <FontAwesomeIcon icon={faUser} onClick={()=> {set_show_popup(prev => prev === 'profile' ? '' : 'profile'); set_edit_profile(false)}}  className="text-(--text-primary) text-lg cursor-pointer hover:text-(--text-secondary) active:text-(--text-primary) " />
+               <FontAwesomeIcon icon={faUser} onClick={()=> {navigate('/profile', {replace: true})}}  className="text-(--text-primary) text-lg cursor-pointer hover:text-(--text-secondary) active:text-(--text-primary) " />
                <div className="relative" >
                   {notif_count !== 0 && (<h1 className="absolute text-sm md:text-md lg:text-lg -right-2 -top-2 p-[0.2rem] rounded-full bg-(--fill-danger) " >{notif_count}</h1>)}
                   <FontAwesomeIcon icon={faBell} onClick={()=> set_show_popup(prev => prev === 'notif' ? '' : 'notif')}  className="text-(--text-primary) text-xl cursor-pointer hover:text-(--text-secondary) active:text-(--text-primary) " />
@@ -159,7 +159,7 @@ export default function Header() {
                <button onClick={()=> navigate('/category', {replace: true})}  className="text-(--text-primary) hover:text-(--text-secondary) transition-colors duration-200" >Category</button>
                <button onClick={()=> navigate('/budget', {replace: true})}  className="text-(--text-primary) hover:text-(--text-secondary) transition-colors duration-200" >Budget</button>
                <button onClick={()=> navigate('/history', {replace: true})}  className="text-(--text-primary) hover:text-(--text-secondary) transition-colors duration-200" >History</button>
-               <FontAwesomeIcon icon={faUser} onClick={()=> {set_show_popup(prev => prev === 'profile' ? '' : 'profile'); set_edit_profile(false)}}  className="text-(--text-primary) text-lg cursor-pointer hover:text-(--text-secondary) active:text-(--text-primary) " />
+               <FontAwesomeIcon icon={faUser} onClick={()=> {navigate('/profile', {replace: true})}}  className="text-(--text-primary) text-lg cursor-pointer hover:text-(--text-secondary) active:text-(--text-primary) " />
                <div className="relative" >
                   {notif_count !== 0 && (<h1 className="absolute text-[0.8rem] -right-2 -top-2 px-2 rounded-full bg-(--fill-danger) " >{notif_count}</h1>)}
                   <FontAwesomeIcon icon={faBell} onClick={()=> set_show_popup(prev => prev === 'notif' ? '' : 'notif')}  className="text-(--text-primary) text-lg cursor-pointer hover:text-(--text-secondary) active:text-(--text-primary) " />

@@ -1,14 +1,15 @@
+require('dotenv').config()
 const { PrismaClient } = require('./prisma/generated/client')
 const { PrismaPg } = require('@prisma/adapter-pg')
 const express = require('express')
 const cors = require('cors')
 const jwt = require('jsonwebtoken')
 const cookie_parser = require('cookie-parser')
-const { login_limiter, register_limiter, two_fa_limiter, read_limiter, write_limiter } = require('./rate_limit')
+const { login_limiter, register_limiter, two_fa_limiter, read_limiter, write_limiter } = require('./utils/rate_limit')
 const bcrypt = require('bcrypt')
-const { send_forgot_verification_email, send_register_verification_email } = require('./mailer')
-const { get_or_set_cache, delete_cache } = require('./redis')
-require('dotenv').config()
+const { register_account_email, recover_account_email, change_password_email, change_email } = require('./utils/mailer')
+const { get_or_set_cache, delete_cache } = require('./utils/redis')
+const { token_auth } = require('./utils/token_auth')
 
 const is_production = process.env.NODE_ENV === 'production'
 
@@ -25,27 +26,16 @@ app.use(cors({
 app.use(express.json())
 app.use(cookie_parser())
 app.set('trust proxy', 1)
-const PORT = process.env.PORT || 3001
+const PORT = process.env.PORT
 
 // Health Check Route
 app.get('/', (req, res) => {res.status(200).json({ message: 'Express backend is live and routing!' })})
 
-// Start Server
+// Server port
 app.listen(PORT, '0.0.0.0', () => {console.log(`Server is running on port ${PORT}`)})
 
-// Token authentication function
-const token_auth = (req, res, next) => {
-	const token = req.cookies.token
-	if (!token) {return res.status(401).json({ message: 'Access denied. No token provided.', no_token: true })}
-	try {
-		const decoded = jwt.verify(token, process.env.JWT_SECRET)
-		req.user = decoded
-		next()
-	} catch (error) {res.status(400).json({ message: 'Invalid token.' })}
-}
-
-// Route that cron-job.org use to run daily_automation.js
-const { run_daily_job } = require('./daily_automation')
+// Route that github actions call to run daily_automation.js
+const { run_daily_job } = require('./utils/daily_automation')
 app.get('/cron/daily-job', async (req, res) => {
    const secret = req.headers['x-cron-secret']
    if (secret !== process.env.CRON_SECRET) return res.status(401).json({ message: 'Unauthorized' })
@@ -58,110 +48,25 @@ app.get('/cron/daily-job', async (req, res) => {
    }
 })
 
-
 // =============================== Routes =======================================
 
 // Check if currently logged in
 app.get('/me', token_auth, read_limiter, async (req, res)=>{res.status(200).json({id: req.user.id, name: req.user.name})})
 
 // Login route
-app.post('/login', login_limiter, async (req, res) => {
-	const { email, password, remember_me } = req.body
-
-	if(typeof email !== 'string' || email.trim().length === 0) return res.status(400).json({ message: 'Invalid email or password.' })  
-	if(typeof password !== 'string' || password.trim().length === 0) return res.status(400).json({ message: 'Invalid email or password.' })  
-	if(typeof remember_me !== 'boolean') return res.status(400).json({ message: 'Invalid check box.' })  
-	
-	try {
-		const user = await prisma.user.findUnique({ where: { email: email } })
-		const password_match = user && await bcrypt.compare(password, user.password)
-		if (!user || !password_match) {return res.status(400).json({ message: 'Invalid email or password.' })}
-		const token = jwt.sign({ id: user.id, name: user.name }, process.env.JWT_SECRET, { expiresIn: (remember_me ? '30d' : '1hr') })
-		
-		res.cookie('token', token, { 
-			httpOnly: true, 
-			secure: is_production,
-			sameSite: is_production ? 'none' : 'strict',
-			...(remember_me ? { maxAge: 30 * 24 * 60 * 60 * 1000 } : { maxAge: 60 * 60 * 1000 }) // 30 days or 1 hours
-		})
-		
-		res.status(200).json({ message: 'Login successful!' })
-	} catch (error) {
-		console.log(error)
-		res.status(500).json({ message: 'Error occurred while logging in.' })}
-})
+const { login } = require('./services/user/login')
+app.post('/login', login_limiter, (req, res)=> login(req, res, prisma))
 
 // Logout route
-app.get('/logout', token_auth, read_limiter, (req, res) => {
-	try {
-		res.clearCookie('token', {
-			httpOnly: true, 
-			secure: process.env.NODE_ENV === 'production',
-			sameSite: 'strict',
-			// secure: true
-		})
-		res.status(200).json({ message: 'Logout successful!' })
-	} catch (error) {
-		console.log(error)
-		res.status(500).json({ message: 'Error occurred while logging out.' })
-	}
-})
+const { logout } = require('./services/user/logout')
+app.get('/logout', token_auth, read_limiter, (req, res) => logout(req, res))
 
 // Register, send verification code
-app.post('/register/send_code', register_limiter, async (req, res) => {
-	const { reg_email } = req.body
-
-	if(!reg_email) return res.status(400).json({ message: 'Email is required.' })
-	if(typeof reg_email !== 'string' || reg_email.trim().length === 0) return res.status(400).json({ message: 'Invalid email.' })  
-
-	try {
-		const email = await prisma.user.findUnique({ where: { email: reg_email } })
-		if(email) return res.status(400).json({ message: 'Email already used.' })
-
-      const code = Math.floor(100000 + Math.random() * 900000).toString() // 6 digits
-		const verification_token = jwt.sign({ reg_email, code }, process.env.JWT_SECRET, { expiresIn: '10m' })
-		
-		res.cookie('verification_token', verification_token, {
-         httpOnly: true,
-         maxAge: 10 * 60 * 1000, // 10 min
-         sameSite: is_production ? 'none' : 'lax',
-			secure: is_production
-      })
-		await send_register_verification_email(reg_email, code)
-
-      res.json({ message: 'Verification code sent.' })
-   } catch (err) {
-      console.error(err)
-      res.status(500).json({ message: 'Failed to send verification code.' })
-   }
-})
+const { register, register_verify } = require('./services/user/register')
+app.post('/register/send_code', register_limiter, (req, res) => register(req, res, prisma))
 
 // Register, verify code
-app.post('/register/verify_code', two_fa_limiter, async (req, res) => {
-   const { code, reg_name, reg_password, reg_email } = req.body
-	const verification_token = req.cookies.verification_token
-
-	if(!verification_token) return res.status(400).json({ message: 'No token sent.' })
-	if(typeof code !== 'string' || code.trim().length === 0) return res.status(400).json({ message: 'Invalid code.' })  
-	if(typeof reg_name !== 'string' || reg_name.trim().length === 0) return res.status(400).json({ message: 'Invalid name.' })  
-	if(typeof reg_password !== 'string' || reg_password.trim().length === 0) return res.status(400).json({ message: 'Invalid password.' })  
-	if(typeof reg_email !== 'string' || reg_email.trim().length === 0) return res.status(400).json({ message: 'Invalid email.' })  
-
-   try {
-		const password_hash = await bcrypt.hash(reg_password, 11)
-		const decoded = jwt.verify(verification_token, process.env.JWT_SECRET)
-		if(decoded.code === code){
-			await prisma.user.create({data: {
-        	name: reg_name, 
-        	password: password_hash, 
-        	email: reg_email}})
-		} else { res.status(400).json({ message: 'Invalid code.' }) }
-      res.status(201).json({ message: 'Account registered successfully.' })
-   } catch (error) {
-		console.log(error)
-		res.status(500).json({ message: 'Error registering user.' })
-	}
-})
+app.post('/register/verify_code', two_fa_limiter, async (req, res) => register_verify(req, res, prisma))
 
 // Forgot password, send code
 app.post('/forgot/send_code', register_limiter, async (req, res) => {
@@ -184,7 +89,7 @@ app.post('/forgot/send_code', register_limiter, async (req, res) => {
          sameSite: is_production ? 'none' : 'lax',
 			secure: is_production
       })
-		await send_forgot_verification_email(email_db, code)
+		await recover_account_email({email: email_db, code})
 
       res.json({ email: email_db, message: 'Verification code sent.' })
    } catch (err) {
@@ -194,20 +99,31 @@ app.post('/forgot/send_code', register_limiter, async (req, res) => {
 })
 // Forgot password, verify code
 app.post('/forgot/verify_code', two_fa_limiter, async (req, res) => {
-   const { forgot_code } = req.body
+   const { code, password } = req.body
+
+	if(!code || !password) return res.status(400).json({ message: 'Code and password are required.' })
+	if(typeof code !== 'string' || code.trim().length === 0) return res.status(400).json({ message: 'Invalid code.' })
+	if(typeof password !== 'string' || password.trim().length === 0) return res.status(400).json({ message: 'Invalid password.' })
 
 	const verification_token_forgot = req.cookies.verification_token_forgot
-	if(!verification_token_forgot) return res.status(400).json({ message: 'No token sent.' })
+	if(!verification_token_forgot) return res.status(400).json({ message: 'No code sent.' })
 
    try {
 		const decoded = jwt.verify(verification_token_forgot, process.env.JWT_SECRET)
-		if(decoded.code !== forgot_code){ res.status(400).json({ message: 'Invalid code.' }) }
-      res.status(200).json({ message: 'Verification success.' })
+		if(decoded.code === code){ 
+			const new_password_hash = await bcrypt.hash(password, 11)
+			await prisma.user.update({
+				where: { email: decoded.email_db },
+				data: { password: new_password_hash }
+			})
+		} else { res.status(400).json({ message: 'Invalid code.' }) }
+      res.status(200).json({ message: 'Password changed successfully.' })
    } catch (error) {
 		console.log(error)
 		res.status(500).json({ message: 'Error verifying code.' })
 	}
 })
+
 // Change password after authentication of forgot password
 app.put('/forgot/change_password', two_fa_limiter, async (req, res) => {
    const { new_password } = req.body
@@ -275,8 +191,89 @@ app.put('/edit/profile', token_auth, write_limiter, async (req, res) => {
 	}
 })
 
+// Edit profile name
+app.put('/edit/profile/name', token_auth, write_limiter, async (req, res) => {
+	const { new_name } = req.body
+	if(typeof new_name !== 'string') return res.status(400).json({ message: 'Invalid name.' })
+	try {
+		await prisma.user.update({
+			where: { id: req.user.id },
+			data: { name: new_name }
+		})
+		res.status(200).json({ message: 'Name edited successfully.' })
+	} catch (error) {
+		console.log(error)
+		res.status(500).json({ message: 'Error editing name.' })
+	}
+})
+
+// Edit profile password
+app.put('/edit/profile/password', token_auth, write_limiter, async (req, res) => {
+	const { current_password, new_password } = req.body
+	if(typeof current_password !== 'string') return res.status(400).json({ message: 'Invalid current password.' })
+	if(typeof new_password !== 'string') return res.status(400).json({ message: 'Invalid new password.' })
+	try {
+		const user = await prisma.user.findUnique({ where: { id: req.user.id } })
+		const password_match = user && await bcrypt.compare(current_password, user.password)
+		if(!password_match) return res.status(401).json({ message: 'Invalid current password.' })
+		const new_password_hash = await bcrypt.hash(new_password, 11)
+		await prisma.user.update({
+			where: { id: req.user.id },
+			data: { password: new_password_hash }
+		})
+		res.status(200).json({ message: 'Password edited successfully.' })
+	} catch (error) {
+		console.log(error)
+		res.status(500).json({ message: 'Error editing password.' })
+	}
+})
+
+// Edit profile email, send code
+app.put('/edit/profile/email/send-code', token_auth, write_limiter, async (req, res) => {
+	const { new_email } = req.body
+	if(typeof new_email !== 'string') return res.status(400).json({ message: 'Invalid email.' })
+	try {
+		const email = await prisma.user.findUnique({ where: { email: new_email } })
+		if(email) return res.status(400).json({ message: 'Email already used.' })
+		const code = Math.floor(100000 + Math.random() * 900000).toString() // 6 digits
+		const verification_token_email = jwt.sign({ new_email, code }, process.env.JWT_SECRET, { expiresIn: '10m' })
+		res.cookie('verification_token_email', verification_token_email, {
+			httpOnly: true,
+			maxAge: 10 * 60 * 1000, // 10 min
+			sameSite: is_production ? 'none' : 'lax',
+			secure: is_production
+		})
+		await send_register_verification_email(new_email, code)
+		res.status(200).json({ message: 'Email edited successfully.' })
+	} catch (error) {
+		console.log(error)
+		res.status(500).json({ message: 'Error editing email.' })
+	}
+})
+
+// Edit profile email, verify code
+app.put('/edit/profile/email/verify-code', token_auth, write_limiter, async (req, res) => {
+	const { new_email, code } = req.body
+	if(typeof new_email !== 'string') return res.status(400).json({ message: 'Invalid email.' })
+	if(typeof code !== 'string') return res.status(400).json({ message: 'Invalid code.' })
+	const verification_token_email = req.cookies.verification_token_email
+	if(!verification_token_email) return res.status(400).json({ message: 'No token sent.' })
+	try {
+		const decoded = jwt.verify(verification_token_email, process.env.JWT_SECRET)
+		if(decoded.code !== code || decoded.new_email !== new_email) return res.status(400).json({ message: 'Invalid code.' })
+		await prisma.user.update({
+			where: { id: req.user.id },
+			data: { email: new_email }
+		})
+		res.status(200).json({ message: 'Email edited successfully.' })
+	} catch (error) {
+		console.log(error)
+		res.status(500).json({ message: 'Error editing email.' })
+	}
+})
+
 // Get subscription of current user
-app.post('/subscription', token_auth, write_limiter, async (req, res) => {
+app.post('/subscription', token_auth, read_limiter, async (req, res) => {
 	const { filter_category, filter_status } = req.body
 	if(typeof filter_status !== 'string') return res.status(400).json({ message: 'Invalid status.' })  
 	const month_name = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -669,7 +666,7 @@ app.delete('/delete/budget', token_auth, write_limiter, async (req, res) => {
 })
 
 // Get subscription history of current user
-app.post('/history', token_auth, write_limiter, async (req, res) => {
+app.post('/history', token_auth, read_limiter, async (req, res) => {
 	const { filter_category, filter_days } = req.body
 	if (typeof filter_days !== 'string') return res.status(400).json({ message: 'Invalid day.' })
 
@@ -1069,7 +1066,7 @@ app.get('/dashboard/renewals', token_auth, read_limiter, async (req, res) => {
 
 
 // Get active expenses by category
-app.post('/dashboard/category_spent', token_auth, write_limiter, async (req, res) => {
+app.post('/dashboard/category_spent', token_auth, read_limiter, async (req, res) => {
    const { toggle } = req.body
 
    if (!toggle) return res.status(400).json({ message: 'Currency is required.' })
@@ -1165,7 +1162,6 @@ app.get('/category/category_summary', token_auth, read_limiter, async (req, res)
 					subs_count: cat.subscriptions.length,
 					php_sub_amount: Number(php_cat_amount?._sum?.amount || 0).toFixed(2),
 					usd_sub_amount: Number(usd_cat_amount?._sum?.amount || 0).toFixed(2),
-
 				}
 			})
 
@@ -1180,7 +1176,7 @@ app.get('/category/category_summary', token_auth, read_limiter, async (req, res)
 })
 
 // Get total budget with expenses
-app.post('/budget/budget_summary', token_auth, write_limiter, async (req, res)=> {
+app.post('/budget/budget_summary', token_auth, read_limiter, async (req, res)=> {
 	const { toggle, input_month_index, input_year } = req.body
 	if(typeof toggle !== 'string' || toggle.trim().length === 0) return res.status(400).json({ message: 'Invalid currency.' })  
 	if(typeof input_month_index !== 'number' || input_month_index.length === 0) return res.status(400).json({ message: 'Invalid month.' })  
@@ -1221,7 +1217,7 @@ app.post('/budget/budget_summary', token_auth, write_limiter, async (req, res)=>
 })
 
 // Get categories, budget, and subs amount based on month
-app.post('/budget/category_budget', token_auth, write_limiter, async (req, res)=> {
+app.post('/budget/category_budget', token_auth, read_limiter, async (req, res)=> {
 	const { toggle, input_month_index, input_year } = req.body
 
 	if(typeof toggle !== 'string' || toggle.trim().length === 0) return res.status(400).json({ message: 'Invalid currency.' })  
