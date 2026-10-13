@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMagnifyingGlassChart, faListCheck, faCircleInfo, faWallet, faTriangleExclamation, faBell } from '@fortawesome/free-solid-svg-icons';
 import LoginForm from '../components/login/login_form';
 import RegisterForm from '../components/login/register_form';
-import ForgotPasswordForm from '../components/login/forgot_password_form';
+import RecoverAccountForm from '../components/login/recover_account_form';
 
 export default function Login() {
    const [show_form, set_show_form] = useState('login')
@@ -48,7 +48,7 @@ export default function Login() {
             </div>
             <div className='flex gap-4 ' >
                <FontAwesomeIcon icon={faCircleInfo} className=' text-orange-500 ' />
-               <p className='text-xs text-(--fill-warning) ' >SubTrack helps you monitor subscriptions and spending, it doesn't manage or cancel them for you. To cancel a subscription, you'll still need to do it directly through that service.</p>
+               <p className='text-sm text-(--fill-warning) ' >SubTrack helps you monitor subscriptions and spending, it doesn't manage or cancel them for you. To cancel a subscription, you'll still need to do it directly through that service.</p>
             </div>
          </section>
 
@@ -73,7 +73,7 @@ export default function Login() {
          {/* Forgot password card */}
          {show_form === 'forgot' && (
             <section className="lg:w-1/3 w-full h-full bg-(--surface-1) lg:rounded-2xl border border-(--border) p-8" >
-               <ForgotPasswordForm
+               <RecoverAccountForm
                   set_show_form={set_show_form}
                />
             </section>

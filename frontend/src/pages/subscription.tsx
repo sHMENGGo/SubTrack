@@ -68,7 +68,7 @@ export default function Subscription() {
       set_loading(true)
       e.preventDefault()
       try {
-         const data = await custom_fetch('add/subscription', {
+         const data = await custom_fetch('subscription/add', {
             method: 'POST',
             body: JSON.stringify({ 
                sub_name, 
@@ -119,7 +119,7 @@ export default function Subscription() {
       set_loading(true)
       e.preventDefault()
       try {
-         const data = await custom_fetch('edit/subscription', {
+         const data = await custom_fetch('subscription/edit', {
             method: 'PUT',
             body: JSON.stringify({ 
                sub_id: sub_id_to_edit,
@@ -155,7 +155,7 @@ export default function Subscription() {
       set_loading(true)
       e.preventDefault()
       try {
-         const data = await custom_fetch('delete/subscription', {
+         const data = await custom_fetch('subscription/delete', {
             method: 'DELETE',
             body: JSON.stringify({ subscription_id: sub_to_delete }),
          })
@@ -195,10 +195,10 @@ export default function Subscription() {
                filtered_subscriptions.map((subscription) => (
                   <div key={subscription.id}  className="grid grid-cols-2 md:grid-cols-8 items-center px-1 lg:px-4 py-1 lg:py-2.5 border-b border-(--border) " >
                      <h1 className="text-base md:col-span-2 lg:col-span-3 text-center md:text-start w-full truncate " >{subscription.name}</h1>
-                     <h2 style={{ backgroundColor: subscription.category?.color_hex || 'var(--border)' }}  className=" px-1 md:px-2 text-xs rounded-full w-fit place-self-center " >{subscription.category?.name || 'Uncategorized'}</h2>
+                     <h2 style={{ backgroundColor: subscription.category?.color_hex || 'var(--border)' }}  className=" px-1 md:px-2 text-sm rounded-full w-fit place-self-center " >{subscription.category?.name || 'Uncategorized'}</h2>
                      <h2 className="place-self-center text-sm" >{subscription.currency === 'PHP' ? '₱' : '$'} {Number(subscription.amount).toFixed(2)}</h2>
                      <h2 className="place-self-center text-sm col-span-1 md:col-span-2 lg:col-span-1" >{subscription.month} {subscription.day}, {subscription.year}</h2>
-                     <h2 className={` ${subscription.is_active ? 'bg-green-900/50' : ' bg-(--border)'} px-1 md:px-2 text-xs rounded-full  w-fit place-self-center`} >{subscription.is_active ? 'Active' : 'Inactive'}</h2>
+                     <h2 className={` ${subscription.is_active ? 'bg-green-900/50' : ' bg-(--border)'} px-1 md:px-2 text-sm rounded-full  w-fit place-self-center`} >{subscription.is_active ? 'Active' : 'Inactive'}</h2>
                      <div className="flex transition-colors text-xl gap-2 md:gap-4 place-self-center" >
                         <FontAwesomeIcon icon={faPenToSquare} onClick={() => open_edit_form(subscription)}  className="text-(--fill-accent) hover:text-blue-400 active:text-(--fill-accent) cursor-pointer " />
                         <FontAwesomeIcon icon={faTrash} onClick={() => open_delete_confirmation(subscription)}  className="text-(--fill-danger) hover:text-red-500 active:text-(--fill-danger) cursor-pointer " />

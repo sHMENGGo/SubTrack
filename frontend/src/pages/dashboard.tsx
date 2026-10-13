@@ -118,7 +118,7 @@ export default function Dashboard() {
    useEffect(()=> {
       const get_budget_left = async ()=> {
          try {
-            const data = await custom_fetch('dashboard/total/budget_left')
+            const data = await custom_fetch('dashboard/total/month_budget_left')
             set_budget(data.budget)
          } catch (err: any) {
             toast.error(err.message)

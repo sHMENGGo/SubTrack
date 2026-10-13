@@ -16,7 +16,7 @@ export default function Category() {
       const get_categories = async () => {
          set_loading_fetch(true)
          try {
-            const data = await custom_fetch('category/category_summary')
+            const data = await custom_fetch('category/summary')
             set_category_summary(data.category_summary)
          } catch (err: any) {
             toast.error(err.message)

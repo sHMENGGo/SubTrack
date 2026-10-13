@@ -37,7 +37,7 @@ export default function Budget() {
    useEffect(()=> {
       const get_budget = async ()=> {
          try {
-            const data = await custom_fetch('budget/budget_summary', {
+            const data = await custom_fetch('budget/summary', {
                method: 'POST',
                body: JSON.stringify({ toggle, input_month_index, input_year })
             })
@@ -55,7 +55,7 @@ export default function Budget() {
    useEffect(()=> {
       const get_categories_budgets = async ()=> {
          try {
-            const data = await custom_fetch('budget/category_budget', {
+            const data = await custom_fetch('budget/per_category', {
                method: 'POST',
                body: JSON.stringify({ toggle, input_month_index, input_year })
             })

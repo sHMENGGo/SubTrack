@@ -194,12 +194,12 @@ export default function Header() {
                            <FontAwesomeIcon className={`${type_color[notif.type] || 'text-(--border)'} text-xl`} icon={notif_icon[notif.type]} />
                               <div className="flex flex-col" >
                                  <h1 className="font-semibold text-sm" >{notif.subscription.name}</h1>
-                                 <h2 className="text-xs" >{notif.message}</h2>
+                                 <h2 className="text-sm" >{notif.message}</h2>
                               </div>
                         </div>
                         <div className="flex flex-col items-end" >
-                           <h1 className="text-xs" >{notif.subscription.currency === 'PHP' ? '₱' : '$'} {notif.amount}</h1>
-                           <h1 className="text-xs" >{notif.month} {notif.day}</h1>
+                           <h1 className="text-sm" >{notif.subscription.currency === 'PHP' ? '₱' : '$'} {notif.amount}</h1>
+                           <h1 className="text-sm" >{notif.month} {notif.day}</h1>
                         </div>
                      </div>
                   )) : (
@@ -216,25 +216,25 @@ export default function Header() {
                <div className="flex flex-col md:flex-row justify-center flex-wrap gap-4" >
                   {/* Current name */}
                   <div>
-                     <label htmlFor="name" className="block text-xs font-medium text-(--text-muted) mb-1.5" >Name</label>
-                     <input type="text" id="name" value={new_name} disabled={!edit_profile} onChange={(e) => set_name(e.target.value)}  className={` ${edit_profile ? 'opacity-100' : 'opacity-50'} w-full px-4 py-2.5 rounded-lg text-xs`} />
+                     <label htmlFor="name" className="block text-sm font-medium text-(--text-muted) mb-1.5" >Name</label>
+                     <input type="text" id="name" value={new_name} disabled={!edit_profile} onChange={(e) => set_name(e.target.value)}  className={` ${edit_profile ? 'opacity-100' : 'opacity-50'} w-full px-4 py-2.5 rounded-lg text-sm`} />
                   </div>
 
                   {/* Current email */}
                   <div>
-                     <label htmlFor="email" className="block text-xs font-medium text-(--text-muted) mb-1.5" >Email</label>
-                     <input type="email" id="email" value={new_email} disabled={!edit_profile} onChange={(e) => set_email(e.target.value)}  className={` ${edit_profile ? 'opacity-100' : 'opacity-50'} w-full px-4 py-2.5 rounded-lg text-xs`} />
+                     <label htmlFor="email" className="block text-sm font-medium text-(--text-muted) mb-1.5" >Email</label>
+                     <input type="email" id="email" value={new_email} disabled={!edit_profile} onChange={(e) => set_email(e.target.value)}  className={` ${edit_profile ? 'opacity-100' : 'opacity-50'} w-full px-4 py-2.5 rounded-lg text-sm`} />
                   </div>
                 
                   {/* Current password */}
                   {edit_profile && (
                      <div className='relative' >
-                        <label htmlFor="password" className="block text-xs font-medium text-(--text-muted) mb-1.5" >Current Password</label>
-                        <input type={show_password ? 'text' : 'password'} id="password" value={current_password} onChange={(e) => set_current_password(e.target.value)}  className="w-full px-4 py-2.5 rounded-lg text-xs" />
+                        <label htmlFor="password" className="block text-sm font-medium text-(--text-muted) mb-1.5" >Current Password</label>
+                        <input type={show_password ? 'text' : 'password'} id="password" value={current_password} onChange={(e) => set_current_password(e.target.value)}  className="w-full px-4 py-2.5 rounded-lg text-sm" />
                         {show_password ? (
-                           <FontAwesomeIcon icon={faEye} onClick={()=> set_show_password(false)}  className='text-(--text-muted) text-xs absolute right-2 top-[55%] cursor-pointer hover:text-(--text-secondary) ' />
+                           <FontAwesomeIcon icon={faEye} onClick={()=> set_show_password(false)}  className='text-(--text-muted) text-sm absolute right-2 top-[55%] cursor-pointer hover:text-(--text-secondary) ' />
                         ) : (
-                           <FontAwesomeIcon icon={faEyeSlash} onClick={()=> set_show_password(true)}  className='text-(--text-muted) text-xs absolute right-2 top-[55%] cursor-pointer hover:text-(--text-secondary) ' />
+                           <FontAwesomeIcon icon={faEyeSlash} onClick={()=> set_show_password(true)}  className='text-(--text-muted) text-sm absolute right-2 top-[55%] cursor-pointer hover:text-(--text-secondary) ' />
                         )}
                      </div>
                   )}
@@ -242,18 +242,18 @@ export default function Header() {
                   {/* New password */}
                   {edit_profile && (
                      <div className='relative' >
-                        <label htmlFor="password" className="block text-xs font-medium text-(--text-muted) mb-1.5" >New Password</label>
-                        <input type={show_password ? 'text' : 'password'} id="password" value={new_password} onChange={(e) => set_new_password(e.target.value)}  className="w-full px-4 py-2.5 rounded-lg text-xs" />
+                        <label htmlFor="password" className="block text-sm font-medium text-(--text-muted) mb-1.5" >New Password</label>
+                        <input type={show_password ? 'text' : 'password'} id="password" value={new_password} onChange={(e) => set_new_password(e.target.value)}  className="w-full px-4 py-2.5 rounded-lg text-sm" />
                         {show_password ? (
-                           <FontAwesomeIcon icon={faEye} onClick={()=> set_show_password(false)}  className='text-(--text-muted) text-xs absolute right-2 top-[55%] cursor-pointer hover:text-(--text-secondary) ' />
+                           <FontAwesomeIcon icon={faEye} onClick={()=> set_show_password(false)}  className='text-(--text-muted) text-sm absolute right-2 top-[55%] cursor-pointer hover:text-(--text-secondary) ' />
                         ) : (
-                           <FontAwesomeIcon icon={faEyeSlash} onClick={()=> set_show_password(true)}  className='text-(--text-muted) text-xs absolute right-2 top-[55%] cursor-pointer hover:text-(--text-secondary) ' />
+                           <FontAwesomeIcon icon={faEyeSlash} onClick={()=> set_show_password(true)}  className='text-(--text-muted) text-sm absolute right-2 top-[55%] cursor-pointer hover:text-(--text-secondary) ' />
                         )}
                      </div>
                   )}
 
-                  {edit_profile && ( <button onClick={(e)=> save_profile(e)}  className="w-full mt-2 bg-(--fill-safe) text-(--text-primary) font-semibold py-2.5 rounded-lg hover:bg-green-400 active:bg-(--fill-safe) transition-all duration-200 text-xs" >{saving_changes ? 'Saving Changes...' : 'Save Changes'}</button> )}
-                  <button onClick={()=> set_edit_profile(!edit_profile)}  className="w-full mt-2 bg-blue-700 text-(--text-primary) font-semibold py-2.5 rounded-lg hover:bg-blue-500 active:bg-blue-700 transition-all duration-200 text-xs" >{edit_profile ? 'Cancel' : 'Edit'}</button>
+                  {edit_profile && ( <button onClick={(e)=> save_profile(e)}  className="w-full mt-2 bg-(--fill-safe) text-(--text-primary) font-semibold py-2.5 rounded-lg hover:bg-green-400 active:bg-(--fill-safe) transition-all duration-200 text-sm" >{saving_changes ? 'Saving Changes...' : 'Save Changes'}</button> )}
+                  <button onClick={()=> set_edit_profile(!edit_profile)}  className="w-full mt-2 bg-blue-700 text-(--text-primary) font-semibold py-2.5 rounded-lg hover:bg-blue-500 active:bg-blue-700 transition-all duration-200 text-sm" >{edit_profile ? 'Cancel' : 'Edit'}</button>
                </div>
             </section>
          )}
