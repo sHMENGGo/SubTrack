@@ -106,7 +106,7 @@ export default function Budget() {
       set_loading(true)
       e.preventDefault()
       try {
-         const data = await custom_fetch('edit/budget', {
+         const data = await custom_fetch('budget/edit', {
             method: 'PUT',
             body: JSON.stringify({ budget_id, new_budget_amount, input_month_index, input_year })
          })

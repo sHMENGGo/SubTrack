@@ -10,7 +10,6 @@ const bcrypt = require('bcrypt')
 const { register_account_email, recover_account_email, change_password_email, change_email } = require('./utils/mailer')
 const { get_or_set_cache, delete_cache } = require('./utils/redis')
 const { token_auth } = require('./utils/token_auth')
-
 const is_production = process.env.NODE_ENV === 'production'
 
 // Prisma 
@@ -47,8 +46,6 @@ app.get('/cron/daily-job', async (req, res) => {
       res.status(500).json({ message: 'Daily job failed.' })
    }
 })
-
-// =============================== Routes =======================================
 
 // Check if currently logged in
 app.get('/me', token_auth, read_limiter, async (req, res)=>{res.status(200).json({id: req.user.id, name: req.user.name})})
