@@ -1,226 +1,101 @@
-import { useState, useEffect } from "react"
-import { custom_fetch } from "../services/api"
-import Progress from "../components/progress"
-import toast from "react-hot-toast"
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import { faChevronLeft, faChevronRight, faPenToSquare, faTrash } from "@fortawesome/free-solid-svg-icons"
+import { useState } from "react"
+import BudgetGet from "../components/budget/get"
+import BudgetEdit from "../components/budget/edit"
+import BudgetAdd from "../components/budget/add"
+import BudgetDelete from "../components/budget/delete"
 
 export default function Budget() {
-   const [loading, set_loading] = useState(false)
-   const date = new Date()
    const [refresh, set_refresh] = useState(false)
 
+   const [show_add_budget, set_show_add_budget] = useState(false)
+   const [category_id, set_category_id] = useState<number>()
+   const [bud_to_edit, set_bud_to_edit] = useState<any | null>(null)
+   const [bud_to_delete, set_bud_to_delete] = useState<any | null>(null)
+
+   const date = new Date()
+
    // Month navigation
+   const [toggle, set_toggle] = useState('PHP')
    const [input_month_index, set_input_month_index] = useState(date.getMonth())
    const [input_year, set_input_year] = useState(date.getFullYear())
 	const month_name = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+   
    // Next month
    const next_month = ()=> {
       if(input_month_index === 11) {
          set_input_month_index(0)
          set_input_year(prev => prev + 1)
-         set_refresh(!refresh) 
-      } else { set_input_month_index(prev => prev + 1); set_refresh(!refresh) }
+         set_refresh((prev:boolean)=> !prev) 
+      } else { 
+         set_input_month_index(prev => prev + 1)
+         set_refresh((prev:boolean)=> !prev) 
+      }
    }
+
    // Previous month
    const prev_month = ()=> {
       if(input_month_index === 0) {
          set_input_month_index(11)
          set_input_year(prev => prev - 1)
-         set_refresh(!refresh)
-      } else { set_input_month_index(prev => prev - 1); set_refresh(!refresh) }
-   } 
-
-   // Get budget details based on toggle and month selected
-   const [toggle, set_toggle] = useState('PHP')
-   const [budget_summary, set_budget_summary] = useState<any>([])
-   useEffect(()=> {
-      const get_budget = async ()=> {
-         try {
-            const data = await custom_fetch('budget/summary', {
-               method: 'POST',
-               body: JSON.stringify({ toggle, input_month_index, input_year })
-            })
-            set_budget_summary(data.budget_summary)
-         } catch (err: any) {
-            toast.error(err.message)
-            console.error('Getting budget failed. ', err)
-         }
+         set_refresh((prev:boolean)=> !prev)
+      } else { 
+         set_input_month_index(prev => prev - 1)
+         set_refresh((prev:boolean)=> !prev) 
       }
-      get_budget()
-   }, [toggle, refresh])
-
-   // Get categories and their budgets
-   const [categories_budgets, set_categories_budgets] = useState<any[]>([])
-   useEffect(()=> {
-      const get_categories_budgets = async ()=> {
-         try {
-            const data = await custom_fetch('budget/per_category', {
-               method: 'POST',
-               body: JSON.stringify({ toggle, input_month_index, input_year })
-            })
-            set_categories_budgets(data.categories_budgets)
-         } catch (err: any) {
-            toast.error(err.message)
-            console.error('Getting categories budgets failed. ', err)
-         }
-      }
-      get_categories_budgets()
-   }, [toggle, refresh])
-
-   // Add budget
-   const [show_add_budget, set_show_add_budget] = useState(false)
-   const [budget_amount, set_budget_amount] = useState<number>()
-   const [category_id, set_category_id] = useState<number>()
-   const open_add_budget = (cat_bud: any)=> {
-      set_category_id(cat_bud.id)
-      set_show_add_budget(true)
-   }
-   const add_budget = async (e: any)=> {
-      set_loading(true)
-      e.preventDefault()
-      try {
-         const data = await custom_fetch('add/budget', {
-            method: 'POST',
-            body: JSON.stringify({ budget_amount, category_id, input_month_index, input_year, toggle })
-         })
-         set_refresh(!refresh)
-         set_show_add_budget(false)
-         toast.success(data.message)
-      } catch (err: any) {
-         toast.error(err.message)
-         console.error('Adding budget failed. ', err)
-      } finally { set_loading(false) }
-   }
-
-   // Edit budget
-   const [show_edit_budget, set_show_edit_budget] = useState(false)
-   const [new_budget_amount, set_new_budget_amount] = useState<number>()
-   const [budget_id, set_budget_id] = useState<number>()
-   const open_edit = (cat_bud: any)=> {
-      set_new_budget_amount(cat_bud.budget)
-      set_budget_id(cat_bud.budget_id)
-      set_show_edit_budget(true)
-   }
-   const edit_budget = async (e: any)=> {
-      set_loading(true)
-      e.preventDefault()
-      try {
-         const data = await custom_fetch('budget/edit', {
-            method: 'PUT',
-            body: JSON.stringify({ budget_id, new_budget_amount, input_month_index, input_year })
-         })
-         set_refresh(!refresh)
-         set_show_edit_budget(false)
-         toast.success(data.message)
-      } catch (err: any) {
-         toast.error(err.message)
-         console.error('Editing budget failed. ', err)
-      } finally { set_loading(false) }
-   }
-
-   // Delete budget
-   const [show_delete_budget, set_show_delete_budget] = useState(false)
-   const [budget_to_delete, set_budget_to_delete] = useState()
-   const [budget_to_delete_name, set_budget_to_delete_name] = useState('')
-   const open_delete_confirmation = (cat_bud: any)=> {
-      set_budget_to_delete(cat_bud.budget_id)
-      set_budget_to_delete_name(cat_bud.name)
-      set_show_delete_budget(true)
-   }
-   const delete_budget = async (e: any)=> {
-      set_loading(true)
-      e.preventDefault()
-      try {
-         const data = await custom_fetch('delete/budget', {
-            method: 'DELETE',
-
-            body: JSON.stringify({ budget_to_delete, toggle, input_month_index, input_year })
-         })
-         set_refresh(!refresh)
-         set_show_delete_budget(false)
-         toast.success(data.message)
-      } catch (err: any) {
-         toast.error(err.message)
-         console.error('Deleting budget failed. ', err)
-      } finally { set_loading(false) }
    }
 
    return (
       <main className="flex flex-col gap-4 w-full h-full justify-center py-4 " >
-         <section className="flex flex-col w-full items-center gap-4 " >
-            {/* month navigation */}
-            <div className="flex gap-2 md:gap-4 text-lg" >
-               <FontAwesomeIcon icon={faChevronLeft} onClick={prev_month} className="text-(--text-primary) hover:text-(--text-secondary) cursor-pointer active:text-(--text-primary) " />
-               <h1>{month_name[input_month_index]} {input_year}</h1>
-               <FontAwesomeIcon icon={faChevronRight} onClick={next_month} className="text-(--text-primary) hover:text-(--text-secondary) cursor-pointer active:text-(--text-primary) " />
-            </div>
-            {/* Total spent of budget */}
-            <div className="flex flex-col items-center gap-2 w-1/3" >
-               <h2 className="text-sm text-nowrap" >Total Spent of Budget</h2>
-               {/* Toggle PHP or USD */}
-               <div onClick={()=> set_toggle(toggle === 'PHP' ? 'USD' : 'PHP')}  className="p-1 px-3 gap-6 rounded-full bg-(--surface-1) flex items-center justify-around relative cursor-pointer" >
-                  <div className={` ${toggle === 'PHP' ? 'left-[1%]' : 'left-[48%]'} bg-blue-900 w-1/2 h-9/10 absolute rounded-full transition-all`} ></div>
-                  <h1 className="z-10 text-sm" >PHP</h1>
-                  <h1 className="z-10 text-sm" >USD</h1>
-               </div>
-               <div className="flex items-end text-nowrap" >
-                  <h1 className="text-xl" >{toggle === 'PHP' ? '₱' : '$'} {budget_summary.subs_total} </h1>
-                  <h2 className="text-md ml-1" >of {toggle === 'PHP' ? '₱' : '$'} {budget_summary.budget}</h2>
-               </div>
-               <Progress current={budget_summary.subs_total} max={budget_summary.budget} />
-            </div>
-         </section>
-         {/* Budget details */}
-         <section className="flex flex-col gap-8 p-2 md:p-4" >
-            {categories_budgets.length !== 0 ? categories_budgets.map(cat_bud => (
-               <div key={cat_bud.id}  className="flex items-center gap-2 md:gap-4" >
-               <Progress page="budget" color={cat_bud.color_hex} name={cat_bud.name} current={cat_bud.amount} max={cat_bud.budget} left={cat_bud.left} symbol={toggle === 'PHP' ? '₱' : '$'} />
-               {cat_bud.budget !== "0.00" ? (
-                  <div className="flex gap-2 md:gap-4" >
-                     <FontAwesomeIcon icon={faPenToSquare} onClick={()=> open_edit(cat_bud)}  className=" text-xl cursor-pointer text-(--fill-accent) hover:text-blue-400 active:text-(--fill-accent) " />
-                     <FontAwesomeIcon icon={faTrash} onClick={()=> open_delete_confirmation(cat_bud)}  className=" text-xl cursor-pointer text-(--fill-danger) active:text-(--fill-danger) hover:text-red-500 " />
-                  </div>
-               ) : (
-                  <button onClick={()=> open_add_budget(cat_bud)}  className="p-2 md:px-4 py-2 md:py-2.5 text-nowrap  rounded-lg bg-blue-900 text-(--text-primary) hover:bg-blue-800 transition-colors text-sm" >Set Budget</button>
-               )}
-               </div>
-            )) : (
-               <h2 className="text-3xl place-self-center mt-10" >No Category.</h2>
-            )}
-         </section>
+         {/* Category budgets */}
+         <BudgetGet 
+            set_refresh={set_refresh}
+            refresh={refresh}
+            set_bud_to_edit={set_bud_to_edit}
+            set_bud_to_delete={set_bud_to_delete}
+            open={()=> set_show_add_budget(true)}
+            toggle={toggle}
+            month_name={month_name}
+            input_month_index={input_month_index}
+            input_year={input_year}
+            set_toggle={set_toggle}
+            next_month={next_month}
+            prev_month={prev_month}
+            set_category_id={set_category_id}
+         />
 
          {/* Add budget */}
          {show_add_budget && (
-            <section onClick={()=> set_show_add_budget(false)}  className=" top-0 left-0 w-full h-full absolute bg-black/50 flex justify-center items-center" >
-               <form onSubmit={(e)=> add_budget(e)} onClick={(e)=> e.stopPropagation()} className="w-full max-w-md bg-(--surface-1) rounded-xl p-8 gap-2 flex flex-col" >
-                  <input type="number" autoFocus value={budget_amount} onChange={(e) => {let val = Number(e.target.value); if(val > 99999999) val = 99999999; set_budget_amount(val)}}  placeholder="Amount" required  className="px-4 py-2.5 rounded-lg w-full text-sm" />
-                  <button type="submit" disabled={loading}  className="px-4 py-2.5 outline-none active:bg-blue-700 mt-4 rounded-lg bg-blue-900 text-(--text-primary) hover:bg-blue-800 transition-colors text-sm" >{loading ? 'Adding Budget...' : 'Add Budget'}</button>
-               </form>
-            </section>
+            <BudgetAdd
+               set_refresh={set_refresh}
+               category_id={category_id}
+               input_month_index={input_month_index}
+               input_year={input_year}
+               toggle={toggle}
+               close={()=> set_show_add_budget(false)}
+            />
          )}
 
          {/* Edit budget */}
-         {show_edit_budget && (
-            <section onClick={()=> set_show_edit_budget(false)}  className=" top-0 left-0 w-full h-full absolute bg-black/50 flex justify-center items-center" >
-               <form onClick={(e)=> e.stopPropagation()} className="w-full max-w-md bg-(--surface-1) rounded-xl p-8 gap-2 flex flex-col" >
-                  <input type="number" autoFocus value={new_budget_amount} onChange={(e) => {let val = Number(e.target.value); if(val > 99999999) val = 99999999 ;set_new_budget_amount(val)}}  placeholder="Amount" required  className="px-4 py-2.5 rounded-lg w-full text-sm" />
-                  <button onClick={(e)=> edit_budget(e)} disabled={loading}  className="px-4 py-2.5 outline-none active:bg-blue-700 mt-4 rounded-lg bg-blue-900 text-(--text-primary) hover:bg-blue-800 transition-colors text-sm" >{loading ? 'Saving Changes...' : 'Save Changes'}</button>
-               </form>
-            </section>
+         {bud_to_edit && (
+            <BudgetEdit
+               set_refresh={set_refresh}
+               budget={bud_to_edit}
+               close={()=> set_bud_to_edit(null)}
+               input_month_index={input_month_index}
+               input_year={input_year}
+            />
          )}
 
          {/* Delete budget form */}
-         {show_delete_budget && (
-            <section onClick={()=> set_show_delete_budget(false)}  className=" top-0 left-0 w-full h-full absolute bg-black/50 flex justify-center items-center" >
-               <div onClick={(e)=> {e.stopPropagation(); e.preventDefault()}}  className="w-full max-w-md bg-(--surface-1) rounded-xl p-8 gap-2 flex flex-col" >
-                  <h1 className="text-sm font-bold text-center" >Are you sure you want to delete {budget_to_delete_name} budget for this month?</h1>
-                  <div className="flex gap-4 mt-4 justify-center transition-colors text-sm" >
-                     <button onClick={(e)=> delete_budget(e)} disabled={loading}  className="px-4 py-2.5 outline-none rounded-lg active:bg-red-700 bg-red-900 text-(--text-primary) hover:bg-red-800" >{loading ? 'Deleting...' : 'Delete'}</button>
-                     <button onClick={()=> set_show_delete_budget(false)}  className="px-4 py-2.5 outline-none active:bg-blue-700 rounded-lg bg-blue-900 text-(--text-primary) hover:bg-blue-800 " >Cancel</button>
-                  </div>
-               </div>
-            </section>
+         {bud_to_delete && (
+            <BudgetDelete
+               set_refresh={set_refresh}
+               budget={bud_to_delete}
+               close={()=> set_bud_to_delete(null)}
+               input_month_index={input_month_index}
+               input_year={input_year}
+               toggle={toggle}
+            />
          )}
       </main>
    )

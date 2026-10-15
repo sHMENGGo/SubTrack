@@ -3,7 +3,7 @@ const { delete_cache } = require('../../utils/redis')
 async function edit_budget(req, res, prisma) {
    const { budget_id, new_budget_amount, input_month_index, input_year } = req.body
 
-	if(typeof budget_id !== 'string' || budget_id.trim().length === 0) return res.status(400).json({ message: 'Invalid budget.' })  
+	if(typeof budget_id !== 'string' || budget_id.trim().length === 0) return res.status(400).json({ message: 'Invalid budget' })  
 	if(typeof input_month_index !== 'number' || input_month_index.length === 0) return res.status(400).json({ message: 'Invalid month.' })  
 	if(typeof input_year !== 'number' || input_year.length === 0) return res.status(400).json({ message: 'Invalid year.' })  
 

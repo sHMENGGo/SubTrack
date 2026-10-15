@@ -23,7 +23,6 @@ export default function Layout() {
    {checking && ( <h2  className="w-full h-full bg-black/50 absolute text-3xl " >Checking...</h2> )}
 
    return (
-      
       <main className="flex flex-col p-4 h-full bg-(--page-bg) gap-4 " >
          <Header/>
          <section ><Outlet/></section>

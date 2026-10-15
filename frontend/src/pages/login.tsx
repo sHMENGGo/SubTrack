@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMagnifyingGlassChart, faListCheck, faCircleInfo, faWallet, faTriangleExclamation, faBell } from '@fortawesome/free-solid-svg-icons';
-import LoginForm from '../components/login/login_form';
-import RegisterForm from '../components/login/register_form';
-import RecoverAccountForm from '../components/login/recover_account_form';
+import LoginForm from '../components/auth/login_form';
+import RegisterForm from '../components/auth/register_form';
+import RecoverAccountForm from '../components/auth/recover_account_form';
 
 export default function Login() {
    const [show_form, set_show_form] = useState('login')
