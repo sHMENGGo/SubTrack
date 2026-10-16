@@ -3,7 +3,9 @@ const { PrismaPg } = require('@prisma/adapter-pg')
 require('dotenv').config()
 const adapter = new PrismaPg({connectionString: process.env.DATABASE_URL})
 const prisma = new PrismaClient({ adapter })
+const { send_notification_email } = require('./mailer')
 
+// Turn a Date into "YYYY-MM-DDT00:00:00.000Z" using the server's local calendar day
 function get_date_string(date) {
    const year = date.getFullYear()
    const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -11,23 +13,61 @@ function get_date_string(date) {
    return `${year}-${month}-${day}T00:00:00.000Z`
 }
 
+// Midnight (UTC-labelled) of the current calendar day, same style as stored billing dates
+function get_today_start() {
+   return new Date(get_date_string(new Date()))
+}
+
+// Add N days using UTC math
+function add_days(date, days) {
+   const result = new Date(date)
+   result.setUTCDate(result.getUTCDate() + days)
+   return result
+}
+
+// Add N months without overflowing into the next month (Jan 31 + 1 month = Feb 28/29)
+function add_months(date, months) {
+   const day = date.getUTCDate()
+   const result = new Date(date)
+   result.setUTCDate(1)
+   result.setUTCMonth(result.getUTCMonth() + months)
+   const last_day = new Date(Date.UTC(result.getUTCFullYear(), result.getUTCMonth() + 1, 0)).getUTCDate()
+   result.setUTCDate(Math.min(day, last_day))
+   return result
+}
+
+// Move a date forward by one billing period; throws on an unknown duration
+function add_period(date, duration) {
+   switch (String(duration).toLowerCase()) {
+      case 'weekly': return add_days(date, 7)
+      case 'monthly': return add_months(date, 1)
+      case 'yearly': return add_months(date, 12)
+      default: throw new Error(`Unknown duration: ${duration}`)
+   }
+}
+
 // Advance next_billing_date for subscriptions that are due, logging PaymentHistory
 async function update_billing_dates() {
    console.log("Checking next billing date of subscriptions for update...")
-   const today = new Date()
+   const today = get_today_start()
+
+   let subs = []
    try {
-      const subs = await prisma.subscription.findMany({ where: { next_billing_date: { lte: today }, is_active: true } })
-      let sub_count = 0
-      let sub_history = 0
-      for (let sub of subs) {
+      subs = await prisma.subscription.findMany({
+         where: { next_billing_date: { lte: today }, is_active: true }
+      })
+   } catch (error) {
+      console.error("Error fetching subscriptions to update: ", error)
+      return
+   }
+
+   let sub_count = 0
+   for (const sub of subs) {
+      try {
          const old_date = new Date(sub.next_billing_date)
-         const next_date = new Date(old_date)
+         let next_date = add_period(old_date, sub.duration)
          while (next_date <= today) {
-            switch (sub.duration) {
-               case 'weekly': next_date.setDate(next_date.getDate() + 7); break
-               case 'monthly': next_date.setMonth(next_date.getMonth() + 1); break
-               case 'yearly': next_date.setFullYear(next_date.getFullYear() + 1); break
-            }
+            next_date = add_period(next_date, sub.duration)
          }
 
          await prisma.$transaction([
@@ -43,33 +83,48 @@ async function update_billing_dates() {
                data: { next_billing_date: next_date }
             })
          ])
-         sub_history++
          sub_count++
+      } catch (error) {
+         console.error(`Failed to update subscription ${sub.id}: `, error)
       }
-      console.log(`Stored ${sub_history} subscriptions in history.`)
-      console.log(`Updated ${sub_count} subscriptions next billing date.`)
-   } catch (error) {
-      console.error("Error updating next billing date of subscriptions: ", error)
    }
+   console.log(`Updated ${sub_count} of ${subs.length} subscriptions (history stored for each).`)
 }
 
 // Generate a renewal notification for subscriptions billing on a given offset (in days from today)
 async function generate_notifications_for_offset(days_offset, type, message, log_label) {
    console.log(`Running subscription check, ${log_label}...`)
-   try {
-      const target_date = new Date()
-      target_date.setDate(target_date.getDate() + days_offset)
-      target_date.setHours(0, 0, 0, 0)
-      const date_string = get_date_string(target_date)
 
-      const upcoming_subs = await prisma.subscription.findMany({
+   const today_start = get_today_start()
+   const day_start = add_days(today_start, days_offset)
+   const day_end = add_days(day_start, 1)
+
+   let upcoming_subs = []
+   try {
+      upcoming_subs = await prisma.subscription.findMany({
          where: {
             is_active: true,
-            next_billing_date: { equals: date_string }
-         }
+            next_billing_date: { gte: day_start, lt: day_end }
+         },
+         include: { user: { select: { email: true, name: true } } }
       })
+   } catch (error) {
+      console.error(`Error fetching subscriptions for ${log_label}:`, error)
+      return
+   }
 
-      for (const sub of upcoming_subs) {
+   let created = 0
+   for (const sub of upcoming_subs) {
+      try {
+         const existing = await prisma.notification.findFirst({
+            where: {
+               subscription_id: sub.id,
+               type,
+               notify_at: { gte: today_start }
+            }
+         })
+         if (existing) continue
+
          await prisma.notification.create({
             data: {
                user_id: sub.user_id,
@@ -80,14 +135,26 @@ async function generate_notifications_for_offset(days_offset, type, message, log
                is_read: false
             }
          })
+         created++
+
+         try {
+            await send_notification_email({
+               email: sub.user.email,
+               user_name: sub.user.name,
+               sub,
+               type
+            })
+         } catch (email_error) {
+            console.error(`Notification saved but email failed for subscription ${sub.id}:`, email_error)
+         }
+      } catch (error) {
+         console.error(`Failed to notify for subscription ${sub.id}:`, error)
       }
-      console.log(`Generated ${upcoming_subs.length} notifications for ${log_label}.`)
-   } catch (error) {
-      console.error(`Error generating notifications for ${log_label}:`, error)
    }
+   console.log(`Generated ${created} notifications for ${log_label}.`)
 }
 
-// Full daily job: advance billing dates, then generate all renewal notifications
+// Full daily job: generate all renewal notifications, then advance billing dates
 async function run_daily_job() {
    await generate_notifications_for_offset(7, 'ONE_WEEK_BEFORE', 'Renews in 1 week', '1 week due date')
    await generate_notifications_for_offset(3, 'THREE_DAYS_BEFORE', 'Renews in 3 days', '3 days due date')

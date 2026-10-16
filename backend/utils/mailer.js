@@ -1,24 +1,43 @@
-require('dotenv').config()
+const { send_email } = require('./mailer')
 
-async function send_email({ to, subject, html }) {
-   const response = await fetch(process.env.GMAIL_SCRIPT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({
-         secret: process.env.GMAIL_SCRIPT_SECRET,
-         to,
-         subject,
-         html
-      })
-   })
-   const result = await response.json().catch(() => ({}))
-   if (!response.ok || !result.ok) {
-      throw new Error(`Email relay error: ${result.message || response.status}`)
-   }
+// Look and wording per notification type (colors match the in-app alert colors)
+const alert_styles = {
+   ONE_WEEK_BEFORE: { label: 'Renews in 1 week', color: '#2563eb', bg: '#eff6ff' },
+   THREE_DAYS_BEFORE: { label: 'Renews in 3 days', color: '#16a34a', bg: '#f0fdf4' },
+   ONE_DAY_BEFORE: { label: 'Renews tomorrow', color: '#d97706', bg: '#fffbeb' },
+   DUE_TODAY: { label: 'Due today', color: '#dc2626', bg: '#fef2f2' }
 }
 
-// HTML layout of email
-function buildEmailHTML({ heading, message, code, footer }) {
+// Stop user-provided text (subscription name, user name) from breaking the HTML
+function escape_html(value) {
+   return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+}
+
+function format_amount(amount, currency) {
+   const value = Number(amount).toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+   })
+   return `${currency} ${value}`
+}
+
+// Billing dates are stored as UTC midnight, so format in UTC to avoid showing the day before
+function format_date(date) {
+   return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      timeZone: 'UTC'
+   })
+}
+
+// HTML layout of renewal reminder email
+function build_notification_html({ user_name, sub, style }) {
    return `
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f7; padding: 40px 0;">
          <tr>
@@ -31,12 +50,15 @@ function buildEmailHTML({ heading, message, code, footer }) {
                   </tr>
                   <tr>
                      <td style="padding: 32px;">
-                        <h1 style="margin: 0 0 12px 0; font-size: 20px; color: #111827;">${heading}</h1>
-                        <p style="margin: 0 0 24px 0; font-size: 14px; line-height: 22px; color: #4b5563;">${message}</p>
-                        <div style="text-align: center; margin: 32px 0;">
-                           <span style="display: inline-block; font-size: 32px; font-weight: 700; letter-spacing: 8px; color: #2563eb; background-color: #eff6ff; padding: 16px 24px; border-radius: 6px;">${code}</span>
+                        <p style="margin: 0 0 8px 0; font-size: 14px; color: #4b5563;">Hi ${escape_html(user_name)},</p>
+                        <h1 style="margin: 0 0 24px 0; font-size: 20px; color: #111827;">${escape_html(sub.name)}: ${style.label}</h1>
+                        <div style="background-color: ${style.bg}; border-left: 4px solid ${style.color}; border-radius: 6px; padding: 16px 20px;">
+                           <p style="margin: 0 0 6px 0; font-size: 13px; color: #6b7280;">Amount</p>
+                           <p style="margin: 0 0 14px 0; font-size: 22px; font-weight: 700; color: ${style.color};">${escape_html(format_amount(sub.amount, sub.currency))}</p>
+                           <p style="margin: 0 0 6px 0; font-size: 13px; color: #6b7280;">Billing date</p>
+                           <p style="margin: 0; font-size: 15px; font-weight: 600; color: #111827;">${escape_html(format_date(sub.next_billing_date))}</p>
                         </div>
-                        <p style="margin: 24px 0 0 0; font-size: 13px; line-height: 20px; color: #9ca3af;">${footer}</p>
+                        <p style="margin: 24px 0 0 0; font-size: 13px; line-height: 20px; color: #9ca3af;">SubTrack only tracks your subscriptions. It does not charge, renew or cancel anything for you.</p>
                      </td>
                   </tr>
                   <tr>
@@ -51,61 +73,17 @@ function buildEmailHTML({ heading, message, code, footer }) {
    `
 }
 
-async function send_verification_email(email, subject, heading, message, code) {
+// Send one renewal reminder email. Throws if the type is unknown or the relay fails.
+async function send_notification_email({ email, user_name, sub, type }) {
+   const style = alert_styles[type]
+   if (!style) throw new Error(`Unknown notification type: ${type}`)
+   if (!email) throw new Error(`No email address for subscription ${sub.id}`)
+
    await send_email({
       to: email,
-      subject: subject,
-      html: buildEmailHTML({
-         heading: heading,
-         message: message,
-         code,
-         footer: "This code expires in 10 minutes. If you didn't request this, you can safely ignore this email."
-      })
+      subject: `${sub.name}: ${style.label}`,
+      html: build_notification_html({ user_name, sub, style })
    })
 }
 
-// Register account email
-async function register_account_email(email, code) {
-   send_verification_email({
-      email,
-      subject: 'Verify your SubTrack account',
-      heading: 'Welcome to SubTrack!',
-      message: 'Use the 6-digit code below to verify your email address and finish setting up your account.',
-      code
-   })
-}
-
-// Recover account email
-async function recover_account_email(email, code) {
-   send_verification_email({
-      email,
-      subject: 'Reset your password',
-      heading: 'Recover your account',
-      message: "Use the 6-digit code below to verify it's you and reset your SubTrack password.",
-      code
-   })
-}
-
-// Change password email
-async function change_password_email(email, code) {
-   send_verification_email({
-      email,
-      subject: 'Change your password',
-      heading: 'You are editing your account',
-      message: "Use the 6-digit code below to verify it's you and change your SubTrack password.",
-      code
-   })
-}
-
-// Change email
-async function change_email(email, code) {
-   send_verification_email({
-      email,
-      subject: 'Change your password',
-      heading: 'You are editing your account',
-      message: "Use the 6-digit code below to verify it's you and change your SubTrack password.",
-      code
-   })
-}
-
-module.exports = { register_account_email, recover_account_email, change_password_email, change_email }
+module.exports = { send_notification_email }
