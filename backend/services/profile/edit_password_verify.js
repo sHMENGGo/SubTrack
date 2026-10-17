@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt')
-const delete_cache = require('../../utils/redis')
+const { delete_cache } = require('../../utils/redis')
+const is_production = process.env.NODE_ENV === 'production'
 
 async function profile_edit_password_verify(req, res, prisma) {
    const { email, code, current_password, new_password } = req.body
@@ -13,7 +14,7 @@ async function profile_edit_password_verify(req, res, prisma) {
    if(typeof email !== 'string' || email.trim().length === 0) return res.status(400).json({ message: 'Invalid email.' })  
 
    try {
-      const user = await prisma.findUnique({ where: {id: req.user.id } })
+      const user = await prisma.user.findUnique({ where: {id: req.user.id } })
       if(user.email !== email) return res.status(401).json({ message: 'Invalid email.' })
       
       const password_matched = bcrypt.compare(current_password, user.password)
@@ -26,9 +27,17 @@ async function profile_edit_password_verify(req, res, prisma) {
             where: { email: email },
             data: { password: password_hash, }
          })
+         await delete_cache(`profile:${req.user.id}`)
+
+         res.clearCookie('token_edit_password', {
+            httpOnly: true,
+            sameSite: is_production ? 'none' : 'lax',
+            secure: is_production
+         })
+
       } else { res.status(400).json({ message: 'Invalid code.' }) }
 
-      await delete_cache(`profile:${req.user.id}`)
+      
 
       res.status(201).json({ message: 'Password changed successfully.' })
    } catch (error) {

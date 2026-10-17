@@ -3,7 +3,7 @@ const { PrismaPg } = require('@prisma/adapter-pg')
 require('dotenv').config()
 const adapter = new PrismaPg({connectionString: process.env.DATABASE_URL})
 const prisma = new PrismaClient({ adapter })
-const { send_notification_email } = require('./mailer')
+const { send_notification_email } = require('./notif_mailer')
 
 // Turn a Date into "YYYY-MM-DDT00:00:00.000Z" using the server's local calendar day
 function get_date_string(date) {

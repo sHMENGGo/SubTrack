@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken')
-const { recover_account_email } = require('../../utils/mailer')
+const { recover_account_email } = require('../../utils/code_mailer')
 const is_production = process.env.NODE_ENV === 'production'
 const bcrypt = require('bcrypt')
 
@@ -49,6 +49,13 @@ async function recover_verify(req, res, prisma) {
             where: { email: email },
             data: { password: password_hash, }
          })
+
+         res.clearCookie('verification_token_forgot', {
+            httpOnly: true,
+            sameSite: is_production ? 'none' : 'lax',
+            secure: is_production
+         })
+
       } else { res.status(400).json({ message: 'Invalid code.' }) }
       res.status(201).json({ message: 'Account registered successfully.' })
    } catch (error) {

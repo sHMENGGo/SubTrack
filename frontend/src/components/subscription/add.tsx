@@ -3,7 +3,6 @@ import { custom_fetch } from "../../services/api"
 import toast from "react-hot-toast"
 
 export default function SubscriptionAdd(props:any) {
-   const [refresh, set_refresh] = useState<boolean>(false)
 
    // Get categories for filter
    const [categories, set_categories] = useState<any[]>([])

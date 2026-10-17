@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt')
 const is_production = process.env.NODE_ENV === 'production'
-const { register_account_email } = require('../../utils/mailer')
+const { register_account_email } = require('../../utils/code_mailer')
 
 async function register(req, res, prisma) {
    const { email } = req.body
@@ -48,7 +48,15 @@ async function register_verify(req, res, prisma) {
          await prisma.user.create({data: {
          name: name, 
          password: password_hash, 
-         email: email}})
+         email: email
+      }})
+
+      res.clearCookie('verification_token', {
+         httpOnly: true,
+         sameSite: is_production ? 'none' : 'lax',
+			secure: is_production
+      })
+         
       } else { res.status(400).json({ message: 'Invalid code.' }) }
       res.status(201).json({ message: 'Account registered successfully.' })
    } catch (error) {

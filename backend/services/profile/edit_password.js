@@ -1,6 +1,6 @@
 const is_production = process.env.NODE_ENV === 'production'
 const jwt = require('jsonwebtoken')
-const { change_password_email } = require('../../utils/mailer')
+const { change_password_email } = require('../../utils/code_mailer')
 
 async function profile_edit_password(req, res, prisma) {
    const { email } = req.body

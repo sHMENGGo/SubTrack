@@ -1,4 +1,4 @@
-const { send_email } = require('./mailer')
+const { send_email } = require('./notif_mailer')
 
 // Look and wording per notification type (colors match the in-app alert colors)
 const alert_styles = {

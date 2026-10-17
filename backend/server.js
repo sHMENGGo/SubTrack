@@ -7,8 +7,6 @@ const jwt = require('jsonwebtoken')
 const cookie_parser = require('cookie-parser')
 const { login_limiter, register_limiter, two_fa_limiter, read_limiter, write_limiter } = require('./utils/rate_limit')
 const bcrypt = require('bcrypt')
-const { register_account_email, recover_account_email, change_password_email, change_email } = require('./utils/mailer')
-const { get_or_set_cache, delete_cache } = require('./utils/redis')
 const { token_auth } = require('./utils/token_auth')
 const is_production = process.env.NODE_ENV === 'production'
 
@@ -90,11 +88,11 @@ app.put('/profile/edit/password/verify_code', token_auth, write_limiter, async (
 
 // Edit profile email, send code
 const profile_edit_email = require('./services/profile/edit_email')
-app.put('/profile/edit/email/send_code', token_auth, write_limiter, async (req, res) => profile_edit_email(req, res))
+app.put('/profile/edit/email/send_code', token_auth, write_limiter, async (req, res) => profile_edit_email(req, res, prisma))
 
 // Edit profile email, verify code
 const profile_edit_email_verify = require('./services/profile/edit_email_verify')
-app.put('/profile/edit/email/verify-code', token_auth, write_limiter, async (req, res) => profile_edit_email_verify(req, res, prisma))
+app.put('/profile/edit/email/verify_code', token_auth, write_limiter, async (req, res) => profile_edit_email_verify(req, res, prisma))
 
 // Get subscription of current user
 const get_subscription = require('./services/subscription/get')
